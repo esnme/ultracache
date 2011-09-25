@@ -49,12 +49,12 @@ static int memcmp64(UINT64 *dst, UINT64 *src, size_t count)
 }
 size_t Hash::compressPtr(HashItem *ptr)
 {
-	return (((size_t)(ptr)) >> 3);
+	return (((size_t)(ptr)) >> 3ULL);
 }
 
 Hash::HashItem *Hash::decompressPtr(size_t value)
 {
-	return ((Hash::HashItem*)(((size_t)(value)) << 3));
+	return ((Hash::HashItem*)(((size_t)(value)) << 3ULL));
 }
 
 
@@ -198,7 +198,7 @@ static Hash::HASHCODE calcHash(void *data, size_t cbKey)
 Hash::Hash (size_t binSize)
 {
 	m_binSize = binSize;
-	m_bin = (HashItem **) g_heap->alloc(binSize * sizeof(HashItem *));
+	m_bin = (UINT32 *) g_heap->alloc(binSize * sizeof(UINT32));
 	memset (m_bin, 0, sizeof (HashItem *) * binSize);
 }
 
@@ -210,7 +210,7 @@ Hash::HashItem *Hash::get(void *key, size_t cbKey)
 {
 	HASHCODE hash = calcHash(key, cbKey);
 
-	for (HashItem *item = m_bin[hash % m_binSize]; item != NULL; item = decompressPtr(item->next))
+	for (HashItem *item = decompressPtr(m_bin[hash % m_binSize]); item != NULL; item = decompressPtr(item->next))
 	{
 		if (item->compareKey(key, cbKey, hash))
 		{
@@ -237,7 +237,7 @@ bool Hash::put(void *key, size_t cbKey, void *value, size_t cbValue, HashItem **
 	HASHCODE hash = calcHash(key, cbKey);
 	size_t index = hash % m_binSize;
 
-	HashItem *item = m_bin[index];
+	HashItem *item = decompressPtr(m_bin[index]);
 
 	HashItem *prevItem = NULL;
 	newItem->setup(itemSize, key, cbKey, value, cbValue, hash);
@@ -253,7 +253,7 @@ bool Hash::put(void *key, size_t cbKey, void *value, size_t cbValue, HashItem **
 			}
 			else
 			{
-				m_bin[index] = newItem;
+				m_bin[index] = compressPtr(newItem);
 				newItem->next = item->next;
 			}
 
@@ -266,8 +266,8 @@ bool Hash::put(void *key, size_t cbKey, void *value, size_t cbValue, HashItem **
 		item = decompressPtr(item->next);
 	}
 
-	newItem->next = compressPtr(m_bin[index]);
-	m_bin[index] = newItem;
+	newItem->next = m_bin[index];
+	m_bin[index] = compressPtr(newItem);
 	
 	return true;
 }
@@ -278,7 +278,7 @@ Hash::HashItem *Hash::remove(void *key, size_t cbKey)
 
 	size_t index = hash % m_binSize;
 
-	HashItem *item = m_bin[index]; 
+	HashItem *item = decompressPtr(m_bin[index]); 
 	HashItem *prevItem = NULL;
 	
 	while (item)
@@ -291,7 +291,7 @@ Hash::HashItem *Hash::remove(void *key, size_t cbKey)
 			}
 			else
 			{
-				m_bin[index] = decompressPtr(item->next);
+				m_bin[index] = item->next;
 			}
 
 			return item;

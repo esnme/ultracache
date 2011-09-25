@@ -11,7 +11,9 @@
 
 Heap::Heap(size_t _cbSize)
 {
-	m_pBase = VirtualAlloc(NULL, _cbSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
+	m_pBase = malloc(_cbSize);//(NULL, _cbSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+	DWORD dwLastError = GetLastError();
 
 	m_pStart = (UINT8 *) m_pBase;
 	m_pEnd = m_pStart + _cbSize;
@@ -24,8 +26,14 @@ Heap::Heap(size_t _cbSize)
 
 Heap::~Heap(void)
 {
-	VirtualFree(m_pBase, 0, MEM_RELEASE); 
+ free (m_pBase); 
 }
+
+size_t Heap::getHeapSize()
+{
+	return (m_pEnd - m_pStart);
+}
+
 
 size_t logh(size_t value)
 {
@@ -116,7 +124,7 @@ Heap::HeapEntry *Heap::allocFromFree(size_t _cbSize)
 size_t Heap::align(size_t base, size_t value)
 {
 	//ptr += (ALIGN-(reinterpret_cast<ptrdiff_t>(ptr)&(ALIGN-1)))&(ALIGN-1);
-	return value += (base-(value & (base-1))) & (base - 1);
+	return value += (base-(value & (base-1ULL))) & (base - 1ULL);
 }
 
 
@@ -187,10 +195,10 @@ Heap::HeapEntry *Heap::allocByCompact(size_t _cbSize)
 
 size_t Heap::compressPtr(HeapEntry *ptr)
 {
-	return (((size_t)(ptr)) >> 3);
+	return (((size_t)(ptr)) >> 3ULL);
 }
 
 Heap::HeapEntry *Heap::decompressPtr(size_t value)
 {
-	return ((Heap::HeapEntry*)(((size_t)(value)) << 3));
+	return ((Heap::HeapEntry*)(((size_t)(value)) << 3ULL));
 }

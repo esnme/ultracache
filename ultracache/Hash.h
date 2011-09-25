@@ -59,7 +59,7 @@ public:
 
 private:
 	size_t m_binSize;
-	HashItem **m_bin;
+	UINT32 *m_bin;
 
 
 

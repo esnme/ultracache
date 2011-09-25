@@ -19,6 +19,7 @@ public:
 	void *alloc(size_t _cbSize);
 	void free(void *ptr);
 	size_t getAllocSize();
+	size_t getHeapSize();
 
 
 private:
@@ -37,6 +38,7 @@ public:
 	static size_t align(size_t base, size_t value);
 	static size_t compressPtr(HeapEntry *ptr);
 	static HeapEntry *decompressPtr(size_t value);
+	
 
 private:
 	void *m_pBase;

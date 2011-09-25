@@ -42,8 +42,8 @@ int main (int argc, char **argv)
 {
 	assert (logh(1024 * 1024) <= HEAP_ALLOC_BITS);
 
-	g_heap = new Heap(0x40000000);
-	g_hash = new Hash(1024 * 1024);
+	g_heap = new Heap(1024ULL * 1024ULL * 1024ULL * 1ULL);
+	g_hash = new Hash(g_heap->getHeapSize() / 0x400ULL);
 
 	assert (Heap::align(8, 1) == 8);
 	assert (Heap::align(8, 9) == 16);
@@ -148,7 +148,7 @@ int main (int argc, char **argv)
 
 	size_t keysPerSec = 0;
 
-	for (int index = 0; index < 2000000000; index ++)
+	for (int index = 0; index < 100000000; index ++)
 	{
 		time_t tsNow = time(0);
 
@@ -188,17 +188,44 @@ int main (int argc, char **argv)
 		{
 			g_hash->free(item);
 		}
-
-
-
-		//item = g_hash->remove(key, keyLen);
-		//g_hash->free(item);
-
-
-		
 	}
 	
 	fprintf (stderr, "%s: Time elapsed %d\n", __FUNCTION__, time(0) - tsStart);
+
+	tsStart = time (0);
+
+	keysPerSec = 0;
+
+	for (int index = 0; index < 100000000; index ++)
+	{
+		time_t tsNow = time(0);
+
+		if (tsNow != tsStart)
+		{
+			fprintf (stderr, "%u reads/sec\n", keysPerSec);
+			keysPerSec = 0;
+			tsStart = tsNow;
+		}
+
+
+		size_t iKey = rand () % keyCount;
+
+		char *key = g_keyBuffer;
+		sprintf(key, "%08x", iKey, iKey, iKey, iKey);
+		size_t keyLen = strlen(key);
+		size_t valueLen = 32;//rand () % 65536;
+		char *value = g_valueBuffer;
+
+		keyLen = Heap::align(8, keyLen);
+		valueLen = Heap::align(8, valueLen);
+
+		keysPerSec ++;
+
+		item = g_hash->get(key, keyLen);
+	}
+	
+	fprintf (stderr, "%s: Time elapsed %d\n", __FUNCTION__, time(0) - tsStart);
+
 
 	delete g_hash;
 	delete g_heap;
