@@ -11,7 +11,7 @@
 
 Heap::Heap(size_t _cbSize)
 {
-	m_pBase = VirtualAlloc(NULL, _cbSize, MEM_COMMIT /*| MEM_RESERVE*/, PAGE_READWRITE);
+	m_pBase = VirtualAlloc(NULL, _cbSize, MEM_COMMIT | MEM_RESERVE, PAGE_READWRITE);
 
 	m_pStart = (UINT8 *) m_pBase;
 	m_pEnd = m_pStart + _cbSize;

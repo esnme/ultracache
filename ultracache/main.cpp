@@ -43,7 +43,7 @@ int main (int argc, char **argv)
 	assert (logh(1024 * 1024) <= HEAP_ALLOC_BITS);
 
 	g_heap = new Heap(0x40000000);
-	g_hash = new Hash(65536);
+	g_hash = new Hash(1024 * 1024);
 
 	assert (Heap::align(8, 1) == 8);
 	assert (Heap::align(8, 9) == 16);
@@ -86,7 +86,7 @@ int main (int argc, char **argv)
 	{
 		char *key = g_keyBuffer;
 
-		sprintf(key, "%d%d%d%d", keyCount, keyCount, keyCount, keyCount);
+		sprintf(key, "%08x", keyCount, keyCount, keyCount, keyCount);
 		
 		size_t keyLen = strlen(key);
 		size_t alignLen = Heap::align(8, keyLen);
@@ -96,7 +96,7 @@ int main (int argc, char **argv)
 			key[offset] = 'X';
 		}
 
-		size_t valueLen = rand () % 65536;
+		size_t valueLen = 32;//rand () % 65536;
 
 		keyLen = Heap::align(8, keyLen);
 		valueLen = Heap::align(8, valueLen);
@@ -111,6 +111,11 @@ int main (int argc, char **argv)
 		assert (item == NULL);
 
 		keyCount ++;
+
+		if (keyCount % 1000000 == 0)
+		{
+			fprintf (stderr, ".");
+		}
 	}
 
 	fprintf (stderr, "%s: Managed to store %u keys\n", __FUNCTION__, keyCount);
@@ -118,7 +123,7 @@ int main (int argc, char **argv)
 	for (size_t keyIndex = 0; keyIndex < keyCount; keyIndex ++)
 	{
 		char *key = g_keyBuffer;
-		sprintf(key, "%d%d%d%d", keyIndex, keyIndex, keyIndex, keyIndex);
+		sprintf(key, "%08x", keyIndex, keyIndex, keyIndex, keyIndex);
 		size_t keyLen = strlen(key);
 		size_t alignLen = Heap::align(8, keyLen);
 
@@ -158,9 +163,9 @@ int main (int argc, char **argv)
 		size_t iKey = rand () % keyCount;
 
 		char *key = g_keyBuffer;
-		sprintf(key, "%d%d%d%d", iKey, iKey, iKey, iKey);
+		sprintf(key, "%08x", iKey, iKey, iKey, iKey);
 		size_t keyLen = strlen(key);
-		size_t valueLen = rand () % 65536;
+		size_t valueLen = 32;//rand () % 65536;
 		char *value = g_valueBuffer;
 
 		keyLen = Heap::align(8, keyLen);

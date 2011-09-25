@@ -4,6 +4,7 @@
 #include <string.h>
 #include "Heap.h"
 #include <string>
+#include <stdint.h> 
 
 #define MEMCPY(_dst, _src, _size) \
 	memcpy64(_dst, _src, _size)
@@ -163,32 +164,35 @@ bool Hash::HashItem::compareKey(void *key, size_t cbKey, Hash::HASHCODE hash)
 }
 
 
+extern uint32_t hashword(const uint32_t *k, size_t length, uint32_t initval);
+
 static Hash::HASHCODE calcHash(void *data, size_t cbKey)
 {
-	Hash::HASHCODE hash = 0ULL;
-	Hash::HASHCODE *offset = (Hash::HASHCODE *) data;
-	Hash::HASHCODE *end = (Hash::HASHCODE*)(((UINT8 *)data)+cbKey);
-	
-	while (offset != end)
+	Hash::HASHCODE h = 0;
+
+	UINT64 *start = (UINT64 *) data;
+	UINT64 *end = (UINT64 *) (((UINT8 *) data) + cbKey);
+
+	while (start != end)
 	{
-		hash = 0x1f * hash + (*offset++);
+		UINT64 value = *start;
+
+		h = 31ULL * h + ((value & 0xff00000000000000ULL) >> 56ULL);
+		h = 31ULL * h + ((value & 0x00ff000000000000ULL) >> 48ULL);
+		h = 31ULL * h + ((value & 0x0000ff0000000000ULL) >> 40ULL);
+		h = 31ULL * h + ((value & 0x000000ff00000000ULL) >> 32ULL);
+		h = 31ULL * h + ((value & 0x00000000ff000000ULL) >> 24ULL);
+		h = 31ULL * h + ((value & 0x0000000000ff0000ULL) >> 16ULL);
+		h = 31ULL * h + ((value & 0x000000000000ff00ULL) >> 8ULL);
+		h = 31ULL * h + ((value & 0x00000000000000ffULL) >> 0ULL);
+
+		start ++;
 	}
 
+	return h;
 
-	return hash;
 
-	/*
-	unsigned long hash = 0;
-	UINT8 *offset = (UINT8 *) data;
-	UINT8 *end = offset + cbKey;
-	
-	while (offset != end)
-	{
-		hash = 31 * hash + (*offset++);
-	}
-
-	return hash;
-	*/
+	//return hashword( (uint32_t *) data, cbKey >> 2, 0);
 }
 
 Hash::Hash (size_t binSize)

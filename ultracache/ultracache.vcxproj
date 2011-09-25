@@ -147,6 +147,7 @@
   <ItemGroup>
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="Heap.cpp" />
+    <ClCompile Include="lookup.cpp" />
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
