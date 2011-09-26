@@ -6,6 +6,8 @@
 
 class Cache
 {
+public:
+	typedef void* KwHandle;
 
 public:
 	Cache(size_t mbytes);
@@ -23,15 +25,22 @@ public:
 	bool incr(const char *key, size_t cbKey, UINT64 increment);
 	bool decr(const char *key, size_t cbKey, UINT64 decrement);
 	bool version(char **version, size_t *cbVersion);
-	bool stats(const char *arg, size_t cbArg);
 	
-private:
+	KwHandle get(const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas);
 
+private:
 	static UINT64 *alignKey(const char *key, size_t cbKey, char *buffer, size_t &cbKeyAligned);
 	Hash::HashItem *alloc(size_t cbKey, size_t cbValue, size_t &cbOutSize);
+	UINT64 getNextCas();
+
+	bool incrementDecrement(const char *key, size_t cbKey, UINT64 number, bool bIncr);
+
+	Hash::HashItem *growAndReplace(Hash::HASHCODE hash, Hash::HashItem *item, Hash::HashItem *previous, size_t cbValue);
+
 private:
 	Hash *m_hash;
 	Heap *m_heap;
 		
+	UINT64 m_cas;
 
 };

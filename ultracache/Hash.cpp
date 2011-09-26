@@ -6,16 +6,7 @@
 #include <string>
 #include <stdint.h> 
 
-#define MEMCPY(_dst, _src, _size) \
-	memcpy64(_dst, _src, _size)
-
-#define MEMCMP(_dst, _src, _size) \
-	memcmp64(_dst, _src, _size)
-
-#ifdef _WIN64
-#define X64_BUILD
-#endif
-
+/*
 static void memcpy64(UINT64 *dst, UINT64 *src, size_t count)
 {
 	UINT64 *end = src + (count >> 3);
@@ -43,6 +34,8 @@ static int memcmp64(UINT64 *dst, UINT64 *src, size_t count)
 
 	return 0;
 }
+*/
+
 size_t Hash::compressPtr(HashItem *ptr)
 {
 	return (((size_t)(ptr)) >> 3ULL);
@@ -111,7 +104,7 @@ void dumpMem(const char *desc, void *_ptr, size_t cbBytes)
 	}
 }
 
-void Hash::HashItem::setup(size_t cwSize, void *key, size_t cbKey, void *value, size_t cbValue)
+void Hash::HashItem::setup(size_t cwSize, void *key, size_t cbKey, void *value, size_t cbValue, UINT32 flags, UINT64 cas, UINT32 expire)
 {
 	//FIXME: alignment is calculated twice here
 
@@ -119,6 +112,9 @@ void Hash::HashItem::setup(size_t cwSize, void *key, size_t cbKey, void *value, 
 	this->next = compressPtr(NULL);
 	this->cbKeyLength = cbKey;
 	this->cbValueLength = cbValue;
+	this->cas = cas;
+	this->flags = flags;
+	this->expire = expire;
 
 	UINT8 *ptr = (UINT8 *) (this+1);
 	memcpy(ptr, key, cbKey);
@@ -138,6 +134,26 @@ Hash::HashItem *Hash::HashItem::appendValue(void *value, size_t cbValue)
 	return NULL;
 }
 
+
+UINT64 Hash::HashItem::getCas()
+{
+	return this->cas;
+}
+
+UINT32 Hash::HashItem::getFlags()
+{
+	return this->flags;
+}
+
+UINT32 Hash::HashItem::getExpire()
+{
+	return this->expire;
+}
+
+size_t Hash::HashItem::getSize()
+{
+	return Heap::align(8, this->cbKeyLength) + this->cbValueLength + sizeof(HashItem);
+}
 
 
 bool Hash::HashItem::compareKey(UINT64 *key, size_t cbKey)
@@ -191,31 +207,71 @@ Hash::Hash (size_t binSize)
 {
 	m_binSize = binSize;
 	m_bin = (UINT32 *) malloc(binSize * sizeof(UINT32));
-	memset (m_bin, 0, sizeof (HashItem *) * binSize);
+	memset (m_bin, 0, sizeof (UINT32) * binSize);
 }
 
 Hash::~Hash (void)
 {
 	free (m_bin);
 }
-
-Hash::HashItem *Hash::get(UINT64 *key, size_t cbKey)
+Hash::HashItem *Hash::get(UINT64 *key, size_t cbKey, HashItem **previous, HASHCODE *outHash)
 {
+	*previous = NULL;
 	size_t cwKey = Heap::align(8, cbKey) >> 3;
 
 	HASHCODE hash = calcHash(key, cwKey);
+	*outHash = hash;
 	size_t index = hash % m_binSize;
 
-	for (HashItem *item = decompressPtr(m_bin[index]); item != NULL; item = decompressPtr(item->next))
+	HashItem *item = decompressPtr(m_bin[index]);
+	HashItem *prev = NULL;
+
+	while (item)
 	{
 		if (item->compareKey(key, cbKey))
 		{
+			*previous = prev;
 			return item;
 		}
+
+		prev = item;
+		item = decompressPtr(item->next);
 	}
 
 	return NULL;
 }
+
+void Hash::link(HASHCODE hash, HashItem *item, HashItem *previous)
+{
+	size_t index = hash % m_binSize;
+
+	if (previous == NULL)
+	{
+		m_bin[index] = compressPtr(item);
+	}
+	else
+	{
+		previous->next = compressPtr(item);
+	}
+
+
+}
+
+void Hash::unlink(HASHCODE hash, HashItem *item, HashItem *previous)
+{
+	size_t index = hash % m_binSize;
+
+	if (previous == NULL)
+	{
+		m_bin[index] = item->next;
+	}
+	else
+	{
+		previous->next = item->next;
+	}
+
+}
+
 
 bool Hash::set(HashItem *newItem, HashItem **previous)
 {
