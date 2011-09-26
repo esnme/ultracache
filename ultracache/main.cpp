@@ -22,14 +22,6 @@ char *randomString (char *base, size_t length)
 	memset (ptr, 'a' + rand () % 25, length);
 
 	ptr += length;
-
-/*
-	for (size_t index = 0; index < length; index ++)
-	{
-		(*ptr++) = 'a' + ((numBase + index) % 25);//'a' + rand () % 25;
-	}
-*/
-
 	(*ptr++) = '\0';
 
 	return base;
@@ -87,37 +79,23 @@ int main (int argc, char **argv)
 	assert (cache->get("key2", 4, &value, &cbValue, &flags, &cas));
 	assert (cbValue == CONFIG_UINT64_STRING_LENGTH);
 	assert (memcmp(value, "18446744073709551615", CONFIG_UINT64_STRING_LENGTH) == 0);
+	
+
+	assert (cache->set("key", 3, "test", 4, 0, 0));
+	assert (cache->get("key", 3, &value, &cbValue, &flags, &cas));
+	assert (cache->cas("key", 3, cas, "right cas", 9, 0, 0));
+	assert (!cache->cas("key", 3, cas, "wrong cas", 9, 0, 0));
+
+	assert (cache->get("key", 3, &value, &cbValue, &flags, &cas));
+	assert (cbValue == 9);
+	assert (memcmp(value, "right cas", 9) == 0);
+
+
 
 
 
 	delete cache;
 
-	/*
-
-	g_hash->put("key", "value", &item);
-	assert(item == NULL);
-
-	item = g_hash->get("key");
-
-	assert (item != NULL);
-
-	std::string str = item->getValueStr ();
-		
-	assert (str == "value");
-
-	g_hash->put("key", "value2", &oldItem);
-	assert (oldItem == item);
-
-	g_hash->free(oldItem);
-
-	newItem = g_hash->get("key");
-	assert (newItem->getValueStr() == "value2");
-
-	delItem = g_hash->remove("key");
-	assert (delItem == newItem);
-
-	g_hash->free(delItem);
-	*/
 
 	getchar();
 

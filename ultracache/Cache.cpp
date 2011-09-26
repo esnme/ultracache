@@ -56,6 +56,9 @@ Cache::KwHandle Cache::get(const char *key, size_t cbKey, void **_outValue, size
 
 	*_outValue = item->getValuePtr();
 	*_cbOutValue = item->getValueLen();
+
+	*_outFlags = item->getFlags();
+	*_outCas = item->getCas();
 	
 	return (KwHandle) item;
 }
@@ -293,7 +296,43 @@ bool Cache::prepend(const char *key, size_t cbKey, void *data, size_t cbData, ti
 	
 bool Cache::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags)
 {
-	return false;
+	char buffer[CONFIG_MAX_KEY_LENGTH];
+	size_t cbKeyAligned;
+	UINT64 *alignedKey = alignKey(key, cbKey, buffer, cbKeyAligned);
+
+	Hash::HashItem *previous;
+	Hash::HASHCODE hash;
+
+	Hash::HashItem *item = m_hash->get(alignedKey, cbKey, &previous, &hash);
+
+	if (item && item->getCas() != casUnique)
+	{
+		return false;
+	}
+
+	Hash::HashItem *newItem;
+	if (item)
+	{
+		newItem = growAndReplace(hash, item, previous, cbData);
+		memcpy (newItem->getValuePtr(), data, cbData);
+
+		newItem->expire = expiration;
+		newItem->flags = flags;
+
+		if (newItem != item)
+		{
+			m_heap->free(item);
+		}
+	}
+	else
+	{
+		size_t cbTotal;
+		newItem = alloc(cbKey, cbData, cbTotal);
+		newItem->setup(cbTotal, (void *) key, cbKey, data, cbData, flags, getNextCas(), expiration);
+	}
+
+	
+	return true;
 }
 
 static UINT64 StringToInteger(char *value, size_t cbValue)
