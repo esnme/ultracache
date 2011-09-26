@@ -1,10 +1,6 @@
 #pragma once
 
-#ifdef _WIN32
-#include <BaseTsd.h>
-#else
-#error "Need types here"
-#endif
+#include "types.h"
 
 #define HEAP_ALLOC_BITS 20
 #define HEAP_ALLOC_SLOTS 128
@@ -31,7 +27,6 @@ private:
 
 	HeapEntry *allocFromFree(size_t _cbSize);
 	HeapEntry *allocFromBase(size_t _cbSize);
-
 	HeapEntry *allocByCompact(size_t _cbSize);
 
 public:
@@ -39,6 +34,7 @@ public:
 	static size_t compressPtr(HeapEntry *ptr);
 	static HeapEntry *decompressPtr(size_t value);
 	
+	static size_t getSizeOfAlloc(void *ptr);
 
 private:
 	void *m_pBase;

@@ -16,10 +16,6 @@
 #define X64_BUILD
 #endif
 
-
-extern Heap *g_heap;
-
-
 static void memcpy64(UINT64 *dst, UINT64 *src, size_t count)
 {
 	UINT64 *end = src + (count >> 3);
@@ -58,35 +54,23 @@ Hash::HashItem *Hash::decompressPtr(size_t value)
 }
 
 
-void *Hash::HashItem::getKeyPtr()
+UINT64 *Hash::HashItem::getKeyPtr()
 {
-	return (this+1);
+	return (UINT64 *) (this+1);
 }
-void *Hash::HashItem::getValuePtr()
+UINT64 *Hash::HashItem::getValuePtr()
 {
-	return ((UINT8 *)(this+1)) + this->keyLength;
+	return (UINT64 *) (((UINT8 *)(this+1)) + Heap::align(8, this->cbKeyLength));
 }
 
 size_t Hash::HashItem::getKeyLen()
 {
-	return this->keyLength;
+	return this->cbKeyLength;
 }
 
 size_t Hash::HashItem::getValueLen()
 {
-	return this->valueLength;
-}
-
-std::string Hash::HashItem::getValueStr()
-{
-	std::string ret((char *)getValuePtr(), getValueLen());
-	return ret;
-}
-
-std::string Hash::HashItem::getKeyStr()
-{
-	std::string ret((char *)getKeyPtr(), getKeyLen());
-	return ret;
+	return this->cbValueLength;
 }
 
 void dumpMem(const char *desc, void *_ptr, size_t cbBytes)
@@ -127,35 +111,45 @@ void dumpMem(const char *desc, void *_ptr, size_t cbBytes)
 	}
 }
 
-
-void Hash::HashItem::setup(size_t cbSize, void *key, size_t cbKey, void *value, size_t cbValue, HASHCODE _hash)
+void Hash::HashItem::setup(size_t cwSize, void *key, size_t cbKey, void *value, size_t cbValue)
 {
+	//FIXME: alignment is calculated twice here
+
+	size_t cbKeyAlign = Heap::align(8, cbKey);
 	this->next = compressPtr(NULL);
-	this->keyLength = cbKey;
-	this->valueLength = cbValue;
+	this->cbKeyLength = cbKey;
+	this->cbValueLength = cbValue;
 
 	UINT8 *ptr = (UINT8 *) (this+1);
-
-	assert (sizeof (HashItem) + cbKey + cbValue <= cbSize);
-
-	MEMCPY( (UINT64 *)ptr,  (UINT64 *)key, cbKey);
+	memcpy(ptr, key, cbKey);
 	ptr += cbKey;
 
-	MEMCPY( (UINT64 *)ptr,  (UINT64 *)value, cbValue);
+	for (size_t i = cbKey; i < cbKeyAlign; i ++)
+	{
+		(*ptr++) = 0x00;
+	}
+	
+	memcpy(ptr,  value, cbValue);
 	ptr += cbValue;
-
 }
 
-bool Hash::HashItem::compareKey(void *key, size_t cbKey, Hash::HASHCODE hash)
+Hash::HashItem *Hash::HashItem::appendValue(void *value, size_t cbValue)
 {
-	assert (Heap::align(8, cbKey) == cbKey);
+	return NULL;
+}
 
-	if (cbKey != this->keyLength)
+
+
+bool Hash::HashItem::compareKey(UINT64 *key, size_t cbKey)
+{
+	size_t cwKey = Heap::align(8, cbKey) >> 3;
+
+	if (cbKey != this->cbKeyLength)
 	{
 		return false;
 	}
 	
-	if (MEMCMP ( (UINT64 *)key, (UINT64 *)this->getKeyPtr(), cbKey))
+	if (memcmp ( (UINT64 *)key, (UINT64 *)this->getKeyPtr(), cwKey << 3))
 	{
 		return false;
 	}
@@ -163,15 +157,12 @@ bool Hash::HashItem::compareKey(void *key, size_t cbKey, Hash::HASHCODE hash)
 	return true;
 }
 
-
-extern uint32_t hashword(const uint32_t *k, size_t length, uint32_t initval);
-
-static Hash::HASHCODE calcHash(void *data, size_t cbKey)
+static Hash::HASHCODE calcHash(UINT64 *data, size_t cwKey)
 {
 	Hash::HASHCODE h = 0;
 
 	UINT64 *start = (UINT64 *) data;
-	UINT64 *end = (UINT64 *) (((UINT8 *) data) + cbKey);
+	UINT64 *end = start + cwKey;
 
 	while (start != end)
 	{
@@ -195,24 +186,29 @@ static Hash::HASHCODE calcHash(void *data, size_t cbKey)
 	//return hashword( (uint32_t *) data, cbKey >> 2, 0);
 }
 
+
 Hash::Hash (size_t binSize)
 {
 	m_binSize = binSize;
-	m_bin = (UINT32 *) g_heap->alloc(binSize * sizeof(UINT32));
+	m_bin = (UINT32 *) malloc(binSize * sizeof(UINT32));
 	memset (m_bin, 0, sizeof (HashItem *) * binSize);
 }
 
 Hash::~Hash (void)
 {
+	free (m_bin);
 }
 
-Hash::HashItem *Hash::get(void *key, size_t cbKey)
+Hash::HashItem *Hash::get(UINT64 *key, size_t cbKey)
 {
-	HASHCODE hash = calcHash(key, cbKey);
+	size_t cwKey = Heap::align(8, cbKey) >> 3;
 
-	for (HashItem *item = decompressPtr(m_bin[hash % m_binSize]); item != NULL; item = decompressPtr(item->next))
+	HASHCODE hash = calcHash(key, cwKey);
+	size_t index = hash % m_binSize;
+
+	for (HashItem *item = decompressPtr(m_bin[index]); item != NULL; item = decompressPtr(item->next))
 	{
-		if (item->compareKey(key, cbKey, hash))
+		if (item->compareKey(key, cbKey))
 		{
 			return item;
 		}
@@ -221,30 +217,21 @@ Hash::HashItem *Hash::get(void *key, size_t cbKey)
 	return NULL;
 }
 
-bool Hash::put(void *key, size_t cbKey, void *value, size_t cbValue, HashItem **previous)
+bool Hash::set(HashItem *newItem, HashItem **previous)
 {
 	(*previous) = NULL;
 
-	size_t itemSize = cbKey + cbValue + sizeof(HashItem);
-	HashItem *newItem = (HashItem*) g_heap->alloc(itemSize);
-	
-	if (newItem == NULL)
-	{
-		//FIXME: Evict or what the hell do we do?
-		return false;
-	}
-	
-	HASHCODE hash = calcHash(key, cbKey);
+	size_t cwKey = Heap::align(8, newItem->getKeyLen()) >> 3;
+
+	HASHCODE hash = calcHash(newItem->getKeyPtr(), cwKey);
 	size_t index = hash % m_binSize;
 
 	HashItem *item = decompressPtr(m_bin[index]);
-
 	HashItem *prevItem = NULL;
-	newItem->setup(itemSize, key, cbKey, value, cbValue, hash);
 	
 	while (item)
 	{
-		if (item->compareKey(key, cbKey, hash))
+		if (item->compareKey(newItem->getKeyPtr(), newItem->getKeyLen()))
 		{
 			if (prevItem)
 			{
@@ -272,9 +259,11 @@ bool Hash::put(void *key, size_t cbKey, void *value, size_t cbValue, HashItem **
 	return true;
 }
 
-Hash::HashItem *Hash::remove(void *key, size_t cbKey)
+Hash::HashItem *Hash::remove(UINT64 *key, size_t cbKey)
 {
-	HASHCODE hash = calcHash(key, cbKey);
+	size_t cwKey = Heap::align(8, cbKey) >> 3;
+
+	HASHCODE hash = calcHash(key, cwKey);
 
 	size_t index = hash % m_binSize;
 
@@ -283,7 +272,7 @@ Hash::HashItem *Hash::remove(void *key, size_t cbKey)
 	
 	while (item)
 	{
-		if (item->compareKey(key, cbKey, hash))
+		if (item->compareKey(key, cbKey))
 		{
 			if (prevItem)
 			{
@@ -304,24 +293,3 @@ Hash::HashItem *Hash::remove(void *key, size_t cbKey)
 	return NULL;
 }
 
-void Hash::free(Hash::HashItem *item)
-{
-	g_heap->free(item);
-}
-
-
-Hash::HashItem *Hash::remove(const std::string &key)
-{
-	return remove ( (void *) key.c_str(), key.length());
-}
-
-
-Hash::HashItem *Hash::get(const std::string &key)
-{
-	return get( (void *) key.c_str(), key.length());
-}
-
-bool Hash::put(const std::string &key, const std::string &value, HashItem **previous)
-{
-	return put( (void *) key.c_str(), key.length(), (void *) value.c_str(), value.size(), previous);
-}

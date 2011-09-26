@@ -1,59 +1,44 @@
 #pragma once 
 
 #include "Heap.h"
-#include <string>
+#include "types.h"
 
-#ifdef _WIN32
-#include <BaseTsd.h>
-#else
-#error "Type definitions are needed here"
-#endif
 
 class Hash
 {
 public:
 
 	typedef size_t HASHCODE;
-
 	
 
 	struct HashItem
 	{
-		UINT64 keyLength:8;
-		UINT64 valueLength:20;
-		UINT64 reserved:4;
+		UINT64 cbKeyLength:8;
+		UINT64 cbValueLength:20;
+		UINT64 reserved:10;
 		UINT64 next:32;
 
-		void setup(size_t cbSize, void *key, size_t cbkey, void *value, size_t cbvalue, HASHCODE _hash);
+		void setup(size_t cbSize, void *key, size_t cbKey, void *value, size_t cbValue);
 
-		void *getKeyPtr();
-		void *getValuePtr();
+		UINT64 *getKeyPtr();
+		UINT64 *getValuePtr();
 		size_t getKeyLen();
 		size_t getValueLen();
 
-		bool compareKey(void *key, size_t cbKey, HASHCODE hash);
-
-		std::string getValueStr();
-		std::string getKeyStr();
-
+		bool compareKey(UINT64 *key, size_t cbKey);
+		HashItem *appendValue(void *value, size_t cbValue);
 	};
 
 public:
 	Hash (size_t binSize);
 	~Hash (void);
 
-	HashItem *get(void *key, size_t cbKey);
+	HashItem *get(UINT64 *key, size_t cbKey);
+	
+	bool set(HashItem *newItem, HashItem **previousItem);
 
-	bool put(void *key, size_t cbKey, void *value, size_t cbValue, HashItem **previous);
-
-	HashItem *get(const std::string &key);
-	bool put(const std::string &key, const std::string &value, HashItem **previous);
-
-	HashItem *remove(const std::string &key);
-	HashItem *remove(void *key, size_t cbKey);
-
-	void free(HashItem *item);
-
+	HashItem *remove(UINT64 *key, size_t cbKey);
+	
 	static size_t compressPtr(HashItem *ptr);
 	static HashItem *decompressPtr(size_t value);
 

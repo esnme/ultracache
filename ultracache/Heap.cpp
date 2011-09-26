@@ -158,6 +158,11 @@ void Heap::debugPrintFree(size_t index)
 
 }
 
+size_t Heap::getSizeOfAlloc(void *ptr)
+{
+	HeapEntry *entry = (((HeapEntry *) ptr) - 1);
+	return entry->cbSize;
+}
 
 void Heap::free(void *ptr)
 {
