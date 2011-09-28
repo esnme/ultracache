@@ -1,103 +1,171 @@
-#include <assert.h>
-#include <stdlib.h>
-#include <sstream>
-#include <time.h>
 #include "Cache.h"
-#include "config.h"
+#include "Packet.h"
+#include "Protocol.h"
+#include "Request.h"
+#include "Packet.h"
+#include "socketdefs.h"
+#include <stdio.h>
+#include <map>
+#include <assert.h>
 
-extern void dumpMem(const char *desc, void *_ptr, size_t cbBytes);
+//FIXME: We probably don't want to use STL here since it sucks
+typedef std::map<UINT64, Request *> REQUESTMAP;
 
-extern size_t logh(size_t val);
+void decodeRequest(Request *request);
 
-char g_valueBuffer[256000] = { 'a' };
-char g_keyBuffer[256000];
 
-char *randomString (char *base, size_t length)
+SOCKET setupSocket(int _port)
 {
-	char *ptr = base;
+	SOCKET sockfd;
 
-	size_t numBase = rand();
+	/* Setup initial UDP socket */
+  sockfd = socket (AF_INET, SOCK_DGRAM, 0);
+
+	if (sockfd == -1)
+	{
+		fprintf (stderr, "%s: Failed to create AF_INET socket\n", __FUNCTION__);
+		return -1;
+	}
+
+/**/
+
+	int size = (1024 * 1024 * 64);
+	
+	while (true)
+	{
+		if (setsockopt (sockfd, SOL_SOCKET, SO_SNDBUF, (char*) &size, sizeof(size)) == -1 ||
+				setsockopt (sockfd, SOL_SOCKET, SO_RCVBUF, (char*) &size, sizeof(size)) == -1)
+		{
+			size >>= 1;
+		}
+
+		break;
+	}
+
+	fprintf (stderr, "SO_SNDBUF: %u\n", size);
+	fprintf (stderr, "SO_RCVBUF: %u\n", size);
+
+	int flag = 0;
+#ifdef _LINUX
+	if (setsockopt (sockfd, SOL_SOCKET, SO_REUSEADDR, (char*) &flag, sizeof(flag)) == -1)
+	{
+	}
+#endif
+
+#ifdef _WIN32
+	if (setsockopt (sockfd, SOL_SOCKET, SO_EXCLUSIVEADDRUSE, (char *) &flag, sizeof (flag)) == -1)
+	{
+	}
+#endif
+	flag=0;
+	setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&flag, sizeof(flag)); 
 
 
-	memset (ptr, 'a' + rand () % 25, length);
 
-	ptr += length;
-	(*ptr++) = '\0';
+	struct sockaddr_in bindAddr;
 
-	return base;
+	memset(&bindAddr, 0, sizeof (sockaddr_in));
+
+	bindAddr.sin_family = AF_INET;
+	bindAddr.sin_addr.s_addr = INADDR_ANY;
+	bindAddr.sin_port = htons(_port);
+
+	if (bind(sockfd, (sockaddr *) &bindAddr, sizeof(struct sockaddr_in)) == -1)
+	{
+		fprintf (stderr, "%s: Failed to bind port %d\n", __FUNCTION__, _port);
+		return -1;
+	}
+		
+	return sockfd;
 }
-
 int main (int argc, char **argv)
 {
-	Cache *cache = new Cache(412);
-	int flags;
-	UINT64 cas;
-	void *value;
-	size_t cbValue;
+	REQUESTMAP rmap;
 
-	cache->set("key", 3, "value", 5, 0, 0);
-	cache->set("key", 3, "bigdeal", 7, 0, 0);
-	assert (cache->get("key", 3, &value, &cbValue, &flags, &cas));
-	assert (cbValue == 7);
-	assert (memcmp(value, "bigdeal", 7) == 0);
-
-	cache->set("key", 3, "valuelonger", 11, 0, 0);
-	assert (cache->get("key", 3, &value, &cbValue, &flags, &cas));
-	assert (cbValue == 11);
-	assert (memcmp(value, "valuelonger", 11) == 0);
+#ifdef _WIN32
+	WSADATA wsaData;
+	WSAStartup(MAKEWORD(2,2), &wsaData);
+#endif
 
 
-	assert (!cache->add("key", 3, "value", 5, 0, 0));
-	assert (cache->del("key", 3, NULL));
-	assert (cache->add("key", 3, "value", 5, 0, 0));
+	SOCKET sockfd = setupSocket(11211);
 
-	assert (cache->replace("key", 3, "newvalue5", 9, 0, 0));
-	assert (cache->get("key", 3, &value, &cbValue, &flags, &cas));
-	assert (cbValue == 9);
-	assert (memcmp(value, "newvalue5", 9) == 0);
-
-	assert (!cache->add("key", 3, "value", 5, 0, 0));
-
-	assert (cache->append("key", 3, "1337", 4, 0, 0));
-	assert (cache->prepend("key", 3, "4590",4, 0, 0));
-
-	assert (cache->get("key", 3, &value, &cbValue, &flags, &cas));
-	assert (cbValue == 17);
-
-	char *str = (char *) value;
-
-	assert (memcmp(value, "4590newvalue51337", 17) == 0);
-
-	assert (!cache->incr("key2", 4, 1));
-	assert (cache->set("key2", 4, "0", 1, 0, 0));
-	assert (cache->incr("key2", 4, 31337));
-	assert (cache->get("key2", 4, &value, &cbValue, &flags, &cas));
-	assert (cbValue == 5);
-	assert (memcmp(value, "31337", 5) == 0);
-
-	assert (cache->decr("key2", 4, 31338));
-	assert (cache->get("key2", 4, &value, &cbValue, &flags, &cas));
-	assert (cbValue == CONFIG_UINT64_STRING_LENGTH);
-	assert (memcmp(value, "18446744073709551615", CONFIG_UINT64_STRING_LENGTH) == 0);
-	
-
-	assert (cache->set("key", 3, "test", 4, 0, 0));
-	assert (cache->get("key", 3, &value, &cbValue, &flags, &cas));
-	assert (cache->cas("key", 3, cas, "right cas", 9, 0, 0));
-	assert (!cache->cas("key", 3, cas, "wrong cas", 9, 0, 0));
-
-	assert (cache->get("key", 3, &value, &cbValue, &flags, &cas));
-	assert (cbValue == 9);
-	assert (memcmp(value, "right cas", 9) == 0);
+	if (sockfd == -1)
+	{
+		return -1;
+	}
 
 
 
 
+	while (true)
+	{
+		struct sockaddr_in remoteAddr;
 
-	delete cache;
+		Packet *packet = new Packet();
+		socklen_t addrLen = sizeof(struct sockaddr_in);
 
+		int recvResult = recvfrom (sockfd, (char *) packet->getHeader(), (int) packet->getBufferSize(), MSG_NOSIGNAL, (sockaddr *) &remoteAddr, &addrLen);
+
+		if (recvResult == -1)
+		{
+			delete packet;
+			continue;
+		}
+
+		if (recvResult < sizeof (protocol::Header))
+		{
+			delete packet;
+			continue;
+		}
+
+		packet->setupBuffer(CONFIG_SIZEOF_PACKET_HEADER, recvResult);
+
+		protocol::Header *header = (protocol::Header *) packet->getHeader();
+
+		UINT64 nodeId = 0;
+
+		nodeId |= ( ((UINT64) remoteAddr.sin_addr.S_un.S_addr) << 32ULL);
+		nodeId |= ( ((UINT64) remoteAddr.sin_port) << 16ULL);
+		nodeId |= ( ((UINT64) header->rid) << 0ULL);
+
+		REQUESTMAP::iterator iter = rmap.find(nodeId);
+
+		Request *request;
+
+		if (iter == rmap.end())
+		{
+			request = new Request();
+		}
+		else
+		{
+			request = iter->second;
+		}
+
+		Request::Result result = request->put(&remoteAddr, packet);
+
+		switch (result)
+		{
+		case Request::NEXTPACKET:
+			break;
+
+		case Request::COMPLETE:
+			decodeRequest(request);
+
+			// Fall through
+		case Request::FAILED:
+			rmap.erase(iter);
+
+			delete request;
+			break;
+		}
+
+
+	}
 
 	getchar();
+
+	SocketClose(sockfd);
 
 	return 0;
 }

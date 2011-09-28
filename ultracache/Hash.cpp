@@ -238,6 +238,7 @@ Hash::HashItem *Hash::get(UINT64 *key, size_t cbKey, HashItem **previous, HASHCO
 		item = decompressPtr(item->next);
 	}
 
+	*previous = prev;
 	return NULL;
 }
 

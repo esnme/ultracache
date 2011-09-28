@@ -3,9 +3,13 @@
 #include <assert.h>
 #include <string.h>
 
+
+//FIXME: Handle when growAndReplace returns NULL
+//FIXME: Items prone to appending might be advisable to increase in big chunks
+
 Cache::Cache(size_t mbytes)
 {
-	size_t heapSize = mbytes * 1024ULL;
+	size_t heapSize = mbytes * (1048576ULL);
 
 	m_heap = new Heap(heapSize);
 	m_hash = new Hash(heapSize / 0x400ULL);
@@ -126,6 +130,12 @@ bool Cache::set(const char *key, size_t cbKey, void *data, size_t cbData, time_t
 	else
 	{
 		newItem = alloc(cbKey, cbData, cbTotal);
+
+		if (newItem == NULL)
+		{
+			return false;
+		}
+
 		UINT64 cas = getNextCas();
 		newItem->setup(cbTotal, (void *) key, cbKey, data, cbData, flags, cas, expiration);
 		m_hash->link(hash, newItem, previous);
@@ -152,10 +162,14 @@ bool Cache::del(const char *key, size_t cbKey, time_t *expiration)
 	
 	Hash::HashItem *item = m_hash->remove(alignedKey, cbKey);
 
+
 	if (item == NULL)
 	{
 		return false;
 	}
+
+	if (expiration)
+		*expiration = item->getExpire();
 
 	m_heap->free(item);
 	return true;

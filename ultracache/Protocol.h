@@ -1,0 +1,53 @@
+#pragma once
+
+#include "types.h"
+
+namespace protocol
+{
+/*
+	bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
+	bool del(const char *key, size_t cbKey, time_t *expiration);
+	bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
+
+	bool replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
+	bool append(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
+	bool prepend(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
+	
+	bool cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags);
+	bool incr(const char *key, size_t cbKey, UINT64 increment);
+	bool decr(const char *key, size_t cbKey, UINT64 decrement);
+	bool version(char **version, size_t *cbVersion);
+	
+	KwHandle get(const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas);
+*/
+
+enum Commands
+{
+	SET,
+	DEL,
+	ADD,
+	REPLACE,
+	APPEND,
+	PREPEND,
+	CAS,
+	INCR,
+	DECR,
+	GET,
+	VERSION,
+};
+
+
+//FIXME: Alignment here, should be 8 bytes
+struct Header
+{
+	UINT16 rid;
+	UINT16 seq;
+
+	UINT32 cmd:4;
+	UINT32 packets:20;
+	UINT32 async:1;
+	UINT32 first:1;
+	UINT32 last:1;
+};
+
+}
