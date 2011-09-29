@@ -149,15 +149,20 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="ByteStream.cpp" />
     <ClCompile Include="Cache.cpp" />
+    <ClCompile Include="decoder.cpp" />
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="Heap.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Packet.cpp" />
     <ClCompile Include="Request.cpp" />
+    <ClCompile Include="Response.cpp" />
+    <ClCompile Include="Server.cpp" />
     <ClCompile Include="tests.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ByteStream.h" />
     <ClInclude Include="Cache.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="Hash.h" />
@@ -166,6 +171,8 @@
     <ClInclude Include="Packet.h" />
     <ClInclude Include="Protocol.h" />
     <ClInclude Include="Request.h" />
+    <ClInclude Include="Response.h" />
+    <ClInclude Include="Server.h" />
     <ClInclude Include="socketdefs.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>

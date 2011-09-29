@@ -34,6 +34,17 @@ enum Commands
 	DECR,
 	GET,
 	VERSION,
+
+	RESULT_STORED,
+	RESULT_NOT_STORED,
+	RESULT_EXISTS,
+	RESULT_NOT_FOUND,
+	RESULT_DELETED,
+	RESULT_VERSION,
+	RESULT_GET,
+	RESULT_ERROR_OOM,
+
+
 };
 
 
@@ -43,7 +54,7 @@ struct Header
 	UINT16 rid;
 	UINT16 seq;
 
-	UINT32 cmd:4;
+	UINT32 cmd:5;
 	UINT32 packets:20;
 	UINT32 async:1;
 	UINT32 first:1;

@@ -26,8 +26,14 @@ Request::Request()
 
 Request::~Request()
 {
-	assert(false);
+	Packet *packet = m_head;
 
+	while (packet)
+	{
+		Packet *free = packet;
+		delete free;
+		packet = packet->next;
+	}
 }
 
 Request::Result Request::put(struct sockaddr_in *remoteAddr, Packet *packet)

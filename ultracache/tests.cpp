@@ -60,8 +60,8 @@ int tests (int argc, char **argv)
 
 	assert (!cache->add("key", 3, "value", 5, 0, 0));
 
-	assert (cache->append("key", 3, "1337", 4, 0, 0));
-	assert (cache->prepend("key", 3, "4590",4, 0, 0));
+	assert (cache->append("key", 3, "1337", 4));
+	assert (cache->prepend("key", 3, "4590",4));
 
 	assert (cache->get("key", 3, &value, &cbValue, &flags, &cas));
 	assert (cbValue == 17);

@@ -18,8 +18,8 @@ public:
 	bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
 
 	bool replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
-	bool append(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
-	bool prepend(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
+	bool append(const char *key, size_t cbKey, void *data, size_t cbData);
+	bool prepend(const char *key, size_t cbKey, void *data, size_t cbData);
 	
 	bool cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags);
 	bool incr(const char *key, size_t cbKey, UINT64 increment);

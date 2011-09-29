@@ -3,6 +3,8 @@
 
 JAllocator<Packet, 512, true> s_alloc;
 
+//FIXME: Packet shouldn't be agnostic of header size, it makes no sense
+
 void *Packet::operator new (size_t _size)
 {
 	return (void *) s_alloc.Alloc ();

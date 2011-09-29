@@ -237,7 +237,7 @@ bool Cache::replace(const char *key, size_t cbKey, void *data, size_t cbData, ti
 	return true;
 }
 
-bool Cache::append(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags)
+bool Cache::append(const char *key, size_t cbKey, void *data, size_t cbData)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
 	size_t cbKeyAligned;
@@ -271,7 +271,7 @@ bool Cache::append(const char *key, size_t cbKey, void *data, size_t cbData, tim
 	return true;
 }
 
-bool Cache::prepend(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags)
+bool Cache::prepend(const char *key, size_t cbKey, void *data, size_t cbData)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
 	size_t cbKeyAligned;
