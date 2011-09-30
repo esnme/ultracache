@@ -27,6 +27,7 @@ public:
 
 	int copyToBuffer(UINT8 *buffer, size_t cbBuffer);
 
+	unsigned int getRid();
 
 private:
 	Packet *m_head;
@@ -44,5 +45,6 @@ private:
 	size_t m_cbSize;
 	bool m_bAsync;
 	protocol::Commands m_cmd;
+	unsigned int m_rid;
 
 };

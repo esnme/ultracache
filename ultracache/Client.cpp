@@ -18,6 +18,7 @@ Client::Client(int timeoutSEC)
 	m_timeout = timeoutSEC;
 
 	m_buffer = new UINT8[CONFIG_MAX_REQUEST_SIZE];
+	m_cbBuffer = CONFIG_MAX_REQUEST_SIZE;
 }
 
 Client::~Client(void)
@@ -66,7 +67,7 @@ int Client::wouldBlock(SOCKET fd, int op, const timeval *tv)
 	}
 }
 
-Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr)
+Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr, unsigned int expRid)
 {
 	Packet *packet = new Packet();
 
@@ -104,7 +105,20 @@ Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr)
 			return NULL;
 
 		default:
+			if (result < sizeof(protocol::Header))
+			{
+				delete packet;
+				return NULL;
+			}
+
 			packet->setupBuffer(result);
+
+			if (packet->getHeader()->rid != expRid)
+			{
+				delete packet;
+				return NULL;
+			}
+
 			return packet;
 		}
 	}
@@ -112,14 +126,14 @@ Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr)
 	return NULL;
 }
 
-bool Client::readResponse(PacketReader &reader, ByteStream &bs)
+bool Client::readResponse(PacketReader &reader, ByteStream &bs, unsigned int expRid)
 {
 	Packet *packet;
 	struct sockaddr_in remoteAddr;
 
 	while (true)
 	{
-		packet = waitForPacket(&remoteAddr);
+		packet = waitForPacket(&remoteAddr, expRid);
 
 		if (packet == NULL)
 		{
@@ -136,7 +150,7 @@ bool Client::readResponse(PacketReader &reader, ByteStream &bs)
 
 		case PacketReader::COMPLETE: 
 			{
-				int sz = reader.copyToBuffer(m_buffer, sizeof(m_buffer));
+				int sz = reader.copyToBuffer(m_buffer, m_cbBuffer);
 
 				if (sz == -1)
 				{
@@ -177,7 +191,7 @@ bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_
 
 	*/
 
-	PacketWriter writer(protocol::SET, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::SET, m_remoteAddr, getNextRid(), bAsync);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{
@@ -207,7 +221,7 @@ bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
 		return false;
 	}
@@ -244,7 +258,7 @@ bool Client::del(const char *key, size_t cbKey, time_t *expiration, bool bAsync)
 
 	*/
 
-	PacketWriter writer(protocol::SET, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::SET, m_remoteAddr, getNextRid(), bAsync);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{
@@ -265,7 +279,7 @@ bool Client::del(const char *key, size_t cbKey, time_t *expiration, bool bAsync)
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
 		return false;
 	}
@@ -302,7 +316,7 @@ bool Client::add(const char *key, size_t cbKey, void *data, size_t cbData, time_
 
 	*/
 
-	PacketWriter writer(protocol::ADD, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::ADD, m_remoteAddr, getNextRid(), bAsync);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{
@@ -332,7 +346,7 @@ bool Client::add(const char *key, size_t cbKey, void *data, size_t cbData, time_
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
 		return false;
 	}
@@ -370,7 +384,7 @@ bool Client::replace(const char *key, size_t cbKey, void *data, size_t cbData, t
 
 	*/
 
-	PacketWriter writer(protocol::REPLACE, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::REPLACE, m_remoteAddr, getNextRid(), bAsync);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{
@@ -400,7 +414,7 @@ bool Client::replace(const char *key, size_t cbKey, void *data, size_t cbData, t
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
 		return false;
 	}
@@ -436,7 +450,7 @@ bool Client::append(const char *key, size_t cbKey, void *data, size_t cbData, bo
 
 	*/
 
-	PacketWriter writer(protocol::APPEND, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::APPEND, m_remoteAddr, getNextRid(), bAsync);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{
@@ -464,7 +478,7 @@ bool Client::append(const char *key, size_t cbKey, void *data, size_t cbData, bo
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
 		return false;
 	}
@@ -500,7 +514,7 @@ bool Client::prepend(const char *key, size_t cbKey, void *data, size_t cbData, b
 
 	*/
 
-	PacketWriter writer(protocol::PREPEND, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::PREPEND, m_remoteAddr, getNextRid(), bAsync);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{
@@ -528,7 +542,7 @@ bool Client::prepend(const char *key, size_t cbKey, void *data, size_t cbData, b
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
 		return false;
 	}
@@ -567,7 +581,7 @@ bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, si
 
 	*/
 
-	PacketWriter writer(protocol::SET, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::SET, m_remoteAddr, getNextRid(), bAsync);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{
@@ -598,7 +612,7 @@ bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, si
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
 		return false;
 	}
@@ -633,7 +647,7 @@ bool Client::incr(const char *key, size_t cbKey, UINT64 increment, bool bAsync)
 
 	*/
 
-	PacketWriter writer(protocol::INCR, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::INCR, m_remoteAddr, getNextRid(), bAsync);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{
@@ -654,7 +668,7 @@ bool Client::incr(const char *key, size_t cbKey, UINT64 increment, bool bAsync)
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
 		return false;
 	}
@@ -691,7 +705,7 @@ bool Client::decr(const char *key, size_t cbKey, UINT64 decrement, bool bAsync)
 
 	*/
 
-	PacketWriter writer(protocol::DECR, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::DECR, m_remoteAddr, getNextRid(), bAsync);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{
@@ -712,7 +726,7 @@ bool Client::decr(const char *key, size_t cbKey, UINT64 decrement, bool bAsync)
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
 		return false;
 	}
@@ -746,13 +760,13 @@ bool Client::version(char **version, size_t *cbVersion)
 
 	*/
 
-	PacketWriter writer(protocol::VERSION, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::VERSION, m_remoteAddr, getNextRid(), false);
 	writer.send(m_sockfd);
 
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
 		return false;
 	}
@@ -790,7 +804,7 @@ HANDLE Client::get(const char *key, size_t cbKey, void **outValue, size_t *_cbOu
 
 	*/
 
-	PacketWriter writer(protocol::GET, m_remoteAddr, getNextRid());
+	PacketWriter writer(protocol::GET, m_remoteAddr, getNextRid(), false);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{
@@ -805,9 +819,9 @@ HANDLE Client::get(const char *key, size_t cbKey, void **outValue, size_t *_cbOu
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs))
+	if (!readResponse(reader, bs, writer.getRid()))
 	{
-		return false;
+		return NULL;
 	}
 
 	switch (reader.getCommand())
@@ -816,10 +830,10 @@ HANDLE Client::get(const char *key, size_t cbKey, void **outValue, size_t *_cbOu
 			break;
 		case protocol::RESULT_NOT_FOUND: 
 			//FIXME: Server sends key back here, do we really want it?
-			return false;
+			return NULL;
 		default: 
 			assert (false);
-			return false;
+			return NULL;
 	}
 
 	size_t outKeyLen = bs.readUINT8();

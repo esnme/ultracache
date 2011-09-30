@@ -36,6 +36,8 @@ PacketReader::Result PacketReader::put(struct sockaddr_in *remoteAddr, Packet *p
 			return PacketReader::FAILED;
 		}
 
+		m_rid = header->rid;
+
 		// Fall through for packets being 1 packets large
 		m_nextSeq = header->seq;
 		m_nextSeq ++;
@@ -145,4 +147,9 @@ int PacketReader::copyToBuffer(UINT8 *buffer, size_t cbBuffer)
 	m_head = m_tail = NULL;
 
 	return (int) cbSize;
+}
+
+unsigned int PacketReader::getRid()
+{
+	return m_rid;
 }

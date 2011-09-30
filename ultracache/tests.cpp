@@ -73,12 +73,34 @@ int tests (int argc, char **argv)
 	assert (client.set("KEY", 3, "VALUE2", 6, 0, 0, true));
 	MSECSleep(500);
 
+	// Set expire relative
+	// Set expire absolute
+	
 	// Get 
 	assert (client.get("KEY", 3, &value, &cbValue, &flags, &cas));
 	assert (cbValue == 6);
-	assert (memcmp(value, "VALUE", 6) == 0);
-
+	assert (memcmp(value, "VALUE2", 6) == 0);
 	
+
+/*
+	bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
+	bool del(const char *key, size_t cbKey, time_t *expiration, bool bAsync);
+	bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
+
+	bool replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
+	bool append(const char *key, size_t cbKey, void *data, size_t cbData, bool bAsync);
+	bool prepend(const char *key, size_t cbKey, void *data, size_t cbData, bool bAsync);
+	
+	bool cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
+	bool incr(const char *key, size_t cbKey, UINT64 increment, bool bAsync);
+	bool decr(const char *key, size_t cbKey, UINT64 decrement, bool bAsync);
+	bool version(char **version, size_t *cbVersion);
+	
+	HANDLE get(const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas);
+	*/
+
+
+	server.shutdown();
 
 
 #ifdef _WIN32

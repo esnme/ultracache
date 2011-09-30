@@ -57,9 +57,9 @@ public:
 private:
 	unsigned int getNextRid();
 	void setError(Errors _error);
-	Packet *waitForPacket(struct sockaddr_in *outRemoteAddr);
+	Packet *waitForPacket(struct sockaddr_in *outRemoteAddr, unsigned int expRid);
 	
-	bool readResponse(PacketReader &reader, ByteStream &bs);
+	bool readResponse(PacketReader &reader, ByteStream &bs, unsigned int expRid);
 
 private:
 	SOCKET m_sockfd;

@@ -16,7 +16,7 @@ void Response::operator delete (void *_p)
 }
 
 Response::Response(protocol::Commands cmd, const struct sockaddr_in &remoteAddr, unsigned int _rid) 
-	: PacketWriter(cmd, remoteAddr, _rid)
+	: PacketWriter(cmd, remoteAddr, _rid, false)
 {
 }
 

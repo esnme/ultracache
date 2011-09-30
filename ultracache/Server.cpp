@@ -6,6 +6,7 @@
 Server::Server()
 {
 	m_buffer = new UINT8[CONFIG_MAX_REQUEST_SIZE];
+	m_bIsRunning = true;
 }
 
 Server::~Server()
@@ -120,7 +121,7 @@ void Server::decodeRequest(Request *request)
 				
 				if (!request->isAsync())
 				{
-					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request);
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request->getRemoteAddr(), request->getRid());
 					response->send(m_sockfd);
 					delete response;
 				}
@@ -139,7 +140,7 @@ void Server::decodeRequest(Request *request)
 				
 				if (!request->isAsync())
 				{
-					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_STORED, request);
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_STORED, request->getRemoteAddr(), request->getRid());
 					response->send(m_sockfd);
 					delete response;
 				}
@@ -157,7 +158,7 @@ void Server::decodeRequest(Request *request)
 				
 				if (!request->isAsync())
 				{
-					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_STORED, request);
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_STORED, request->getRemoteAddr(), request->getRid());
 					response->send(m_sockfd);
 					delete response;
 				}
@@ -173,7 +174,7 @@ void Server::decodeRequest(Request *request)
 				
 				if (!request->isAsync())
 				{
-					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request);
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request->getRemoteAddr(), request->getRid());
 					response->send(m_sockfd);
 					delete response;
 				}
@@ -190,7 +191,7 @@ void Server::decodeRequest(Request *request)
 				
 				if (!request->isAsync())
 				{
-					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request);
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request->getRemoteAddr(), request->getRid());
 					response->send(m_sockfd);
 					delete response;
 				}
@@ -210,7 +211,7 @@ void Server::decodeRequest(Request *request)
 				
 				if (!request->isAsync())
 				{
-					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_EXISTS, request);
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_EXISTS, request->getRemoteAddr(), request->getRid());
 					response->send(m_sockfd);
 					delete response;
 				}
@@ -225,7 +226,7 @@ void Server::decodeRequest(Request *request)
 				
 				if (!request->isAsync())
 				{
-					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_FOUND, request);
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_FOUND, request->getRemoteAddr(), request->getRid());
 					response->write(value);
 					response->send(m_sockfd);
 					delete response;
@@ -242,7 +243,7 @@ void Server::decodeRequest(Request *request)
 			
 				if (!request->isAsync())
 				{
-					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_FOUND, request);
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_FOUND, request->getRemoteAddr(), request->getRid());
 					response->write(value);
 					response->send(m_sockfd);
 					delete response;
@@ -261,7 +262,7 @@ void Server::decodeRequest(Request *request)
 
 				if (!request->isAsync())
 				{
-					Response *response = new Response(bResult ? protocol::RESULT_DELETED: protocol::RESULT_NOT_FOUND, request);
+					Response *response = new Response(bResult ? protocol::RESULT_DELETED: protocol::RESULT_NOT_FOUND, request->getRemoteAddr(), request->getRid());
 					response->write(exp);
 					response->send(m_sockfd);
 					delete response;
@@ -275,7 +276,7 @@ void Server::decodeRequest(Request *request)
 				size_t cbVersion;
 
 				m_cache->version(&version, &cbVersion);
-				Response *response = new Response(protocol::RESULT_VERSION, request);
+				Response *response = new Response(protocol::RESULT_VERSION, request->getRemoteAddr(), request->getRid());
 
 				response->write( (UINT8) cbVersion);
 				response->write( (UINT8*) version, cbVersion);
@@ -298,7 +299,7 @@ void Server::decodeRequest(Request *request)
 
 				if (handle)
 				{
-					response = new Response(protocol::RESULT_GET, request);
+					response = new Response(protocol::RESULT_GET, request->getRemoteAddr(), request->getRid());
 					response->write( (UINT8) keyLen);
 					response->write( (UINT8 *) key, keyLen);
 					response->write ( (UINT32) flags);
@@ -310,7 +311,7 @@ void Server::decodeRequest(Request *request)
 				}
 				else
 				{
-					response = new Response(protocol::RESULT_NOT_FOUND, request);
+					response = new Response(protocol::RESULT_NOT_FOUND, request->getRemoteAddr(), request->getRid());
 					response->write( (UINT8) keyLen);
 					response->write( (UINT8 *) key, keyLen);
 				}
@@ -348,7 +349,7 @@ int Server::main(int argc, char **argv)
 
 	Server::m_cache = new Cache(1024);
 
-	while (true)
+	while (m_bIsRunning)
 	{
 		struct sockaddr_in remoteAddr;
 
@@ -416,4 +417,12 @@ int Server::main(int argc, char **argv)
 	}
 
 	SocketClose(sockfd);
+	return 0;
+}
+
+
+void Server::shutdown()
+{
+	m_bIsRunning = false;
+	SocketClose(m_sockfd);
 }

@@ -3,7 +3,7 @@
 #include <stdlib.h>
 
 
-PacketWriter::PacketWriter(protocol::Commands cmd, const struct sockaddr_in &_remoteAddr, unsigned int _rid)
+PacketWriter::PacketWriter(protocol::Commands cmd, const struct sockaddr_in &_remoteAddr, unsigned int _rid, bool bAsync)
 {
 	m_seq = rand ();
 	m_cmd = cmd;
@@ -12,6 +12,7 @@ PacketWriter::PacketWriter(protocol::Commands cmd, const struct sockaddr_in &_re
 	m_tail = m_head = NULL;
 	m_offset = m_end = NULL;
 	m_packets = 0;
+	m_bAsync = bAsync;
 
 	preparePacket();
 	((protocol::Header *)m_head->getHeader())->first = 1;
@@ -49,7 +50,7 @@ void PacketWriter::preparePacket()
 	
 	protocol::Header *header = (protocol::Header *) packet->getHeader();
 
-	header->async = 0;
+	header->async = m_bAsync ? 1 : 0;
 	header->cmd = m_cmd;
 	header->first = 0;
 	header->last = 0;
@@ -156,5 +157,11 @@ void PacketWriter::send(SOCKET sockfd)
 
 	m_head = m_tail = NULL;
 
+}
+
+
+unsigned int PacketWriter::getRid()
+{
+	return m_rid;
 }
 

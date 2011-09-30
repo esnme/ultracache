@@ -14,7 +14,8 @@ public:
 	Server();
 	~Server();
 	int main(int argc, char **argv);
-	
+	void shutdown();
+
 private:
 	Cache *m_cache;
 	SOCKET m_sockfd;
@@ -22,7 +23,9 @@ private:
 private:
 	SOCKET createSocket(int port);
 	void decodeRequest(Request *request);
-
+	
 	UINT8 *m_buffer;
+
+	bool m_bIsRunning;
 
 };

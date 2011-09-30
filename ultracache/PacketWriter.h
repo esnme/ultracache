@@ -8,7 +8,7 @@
 class PacketWriter
 {
 public:
-	PacketWriter(protocol::Commands cmd, const struct sockaddr_in &_remoteAddr, unsigned int _rid);
+	PacketWriter(protocol::Commands cmd, const struct sockaddr_in &_remoteAddr, unsigned int _rid, bool bAsync);
 	~PacketWriter(void);
 
 public:
@@ -18,6 +18,8 @@ public:
 	void write(UINT32 value);
 	void write(UINT64 value);
 	void send(SOCKET sockfd);
+
+	unsigned int getRid();
 
 private:
 	void ensureSmallSpace(size_t sz);
@@ -35,6 +37,7 @@ private:
 
 	size_t m_packets;
 	UINT16 m_rid;
+	bool m_bAsync;
 	UINT8 m_cmd;
 
 	UINT16 m_seq;
