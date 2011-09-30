@@ -23,6 +23,7 @@ namespace protocol
 
 enum Commands
 {
+	RESERVED = 0,
 	SET,
 	DEL,
 	ADD,
@@ -47,8 +48,14 @@ enum Commands
 
 };
 
+#ifdef _WIN32
+#pragma pack(push)
+#pragma pack(1)
+#define __GCC_ALIGN__
+#else
+#define __GCC_ALIGN__ __attribute__ ((packed))
+#endif
 
-//FIXME: Alignment here, should be 8 bytes
 struct Header
 {
 	UINT16 rid;
@@ -59,6 +66,13 @@ struct Header
 	UINT32 async:1;
 	UINT32 first:1;
 	UINT32 last:1;
-};
+} __GCC_ALIGN__;
+
+
+#ifdef _WIN32
+#pragma pack(pop)
+#else
+#pragma align 0
+#endif
 
 }

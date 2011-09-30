@@ -3,6 +3,16 @@
 #include <assert.h>
 #include "Response.h"
 
+Server::Server()
+{
+	m_buffer = new UINT8[CONFIG_MAX_REQUEST_SIZE];
+}
+
+Server::~Server()
+{
+	delete m_buffer;
+}
+
 SOCKET Server::createSocket(int port)
 {
 	SOCKET sockfd;
@@ -66,10 +76,9 @@ SOCKET Server::createSocket(int port)
 
 void Server::decodeRequest(Request *request)
 {
-	UINT8 buffer[CONFIG_MAX_REQUEST_SIZE];
-	UINT8 *offset = buffer;
+	UINT8 *offset = m_buffer;
 
-	int cbBuffer = request->copyToBuffer(buffer, CONFIG_MAX_REQUEST_SIZE);
+	int cbBuffer = request->copyToBuffer(m_buffer, CONFIG_MAX_REQUEST_SIZE);
 
 	if (cbBuffer == -1)
 	{
@@ -79,7 +88,7 @@ void Server::decodeRequest(Request *request)
 
 	try
 	{
-		ByteStream bs(buffer, (size_t) cbBuffer);
+		ByteStream bs(m_buffer, (size_t) cbBuffer);
 		/*
 		bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
 		bool del(const char *key, size_t cbKey, time_t *expiration);
@@ -107,11 +116,14 @@ void Server::decodeRequest(Request *request)
 				void *value = bs.read(valueLen);
 				time_t expiration = bs.readUINT32();
 				int flags = bs.readUINT32();
-				bool bResult = m_cache->set( (char *) key, keyLen, value, valueLen, expiration, flags);
+				bool bResult = m_cache->set( (char *) key, keyLen, value, valueLen, expiration, flags, false);
 				
-				Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request);
-				response->send(m_sockfd);
-				delete response;
+				if (!request->isAsync())
+				{
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request);
+					response->send(m_sockfd);
+					delete response;
+				}
 				break;
 			}
 
@@ -123,11 +135,14 @@ void Server::decodeRequest(Request *request)
 				void *value = bs.read(valueLen);
 				time_t expiration = bs.readUINT32();
 				int flags = bs.readUINT32();
-				bool bResult = m_cache->add( (char *) key, keyLen, value, valueLen, expiration, flags);
+				bool bResult = m_cache->add( (char *) key, keyLen, value, valueLen, expiration, flags, false);
 				
-				Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_STORED, request);
-				response->send(m_sockfd);
-				delete response;
+				if (!request->isAsync())
+				{
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_STORED, request);
+					response->send(m_sockfd);
+					delete response;
+				}
 				break;
 			}
 		case protocol::REPLACE:
@@ -138,11 +153,14 @@ void Server::decodeRequest(Request *request)
 				void *value = bs.read(valueLen);
 				time_t expiration = bs.readUINT32();
 				int flags = bs.readUINT32();
-				bool bResult = m_cache->replace( (char *) key, keyLen, value, valueLen, expiration, flags);
+				bool bResult = m_cache->replace( (char *) key, keyLen, value, valueLen, expiration, flags, false);
 				
-				Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_STORED, request);
-				response->send(m_sockfd);
-				delete response;
+				if (!request->isAsync())
+				{
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_STORED, request);
+					response->send(m_sockfd);
+					delete response;
+				}
 				break;
 			}
 		case protocol::APPEND:
@@ -151,11 +169,14 @@ void Server::decodeRequest(Request *request)
 				void *key = bs.read(keyLen);
 				size_t valueLen = bs.readUINT32();
 				void *value = bs.read(valueLen);
-				bool bResult = m_cache->append( (char *) key, keyLen, value, valueLen);
+				bool bResult = m_cache->append( (char *) key, keyLen, value, valueLen, false);
 				
-				Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request);
-				response->send(m_sockfd);
-				delete response;
+				if (!request->isAsync())
+				{
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request);
+					response->send(m_sockfd);
+					delete response;
+				}
 
 				break;
 			}
@@ -165,11 +186,14 @@ void Server::decodeRequest(Request *request)
 				void *key = bs.read(keyLen);
 				size_t valueLen = bs.readUINT32();
 				void *value = bs.read(valueLen);
-				bool bResult = m_cache->prepend( (char *) key, keyLen, value, valueLen);
+				bool bResult = m_cache->prepend( (char *) key, keyLen, value, valueLen, false);
 				
-				Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request);
-				response->send(m_sockfd);
-				delete response;
+				if (!request->isAsync())
+				{
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request);
+					response->send(m_sockfd);
+					delete response;
+				}
 				break;
 
 			}
@@ -182,11 +206,14 @@ void Server::decodeRequest(Request *request)
 				UINT64 casUnique = bs.readUINT64();
 				time_t expiration = bs.readUINT32();
 				int flags = bs.readUINT32();
-				bool bResult = m_cache->cas( (char *) key, keyLen, casUnique, value, valueLen, expiration, flags);
+				bool bResult = m_cache->cas( (char *) key, keyLen, casUnique, value, valueLen, expiration, flags, false);
 				
-				Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_EXISTS, request);
-				response->send(m_sockfd);
-				delete response;
+				if (!request->isAsync())
+				{
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_EXISTS, request);
+					response->send(m_sockfd);
+					delete response;
+				}
 				break;
 			}
 		case protocol::INCR:
@@ -194,12 +221,15 @@ void Server::decodeRequest(Request *request)
 				size_t keyLen = bs.readUINT8();
 				void *key = bs.read(keyLen);
 				UINT64 value = bs.readUINT64();
-				bool bResult = m_cache->incr( (char *) key, keyLen, value);
+				bool bResult = m_cache->incr( (char *) key, keyLen, value, false);
 				
-				Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_FOUND, request);
-				response->write(value);
-				response->send(m_sockfd);
-				delete response;
+				if (!request->isAsync())
+				{
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_FOUND, request);
+					response->write(value);
+					response->send(m_sockfd);
+					delete response;
+				}
 
 				break;
 			}
@@ -208,12 +238,15 @@ void Server::decodeRequest(Request *request)
 				size_t keyLen = bs.readUINT8();
 				void *key = bs.read(keyLen);
 				UINT64 value = bs.readUINT64();
-				bool bResult = m_cache->decr( (char *) key, keyLen, value);
+				bool bResult = m_cache->decr( (char *) key, keyLen, value, false);
 			
-				Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_FOUND, request);
-				response->write(value);
-				response->send(m_sockfd);
-				delete response;
+				if (!request->isAsync())
+				{
+					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_FOUND, request);
+					response->write(value);
+					response->send(m_sockfd);
+					delete response;
+				}
 				break;
 			}
 
@@ -223,13 +256,16 @@ void Server::decodeRequest(Request *request)
 				void *key = bs.read(keyLen);
 				time_t expiration;
 
-				bool bResult = m_cache->del( (char *) key, keyLen, &expiration);
+				bool bResult = m_cache->del( (char *) key, keyLen, &expiration, false);
 				UINT32 exp = (UINT32) expiration;
 
-				Response *response = new Response(bResult ? protocol::RESULT_DELETED: protocol::RESULT_NOT_FOUND, request);
-				response->write(exp);
-				response->send(m_sockfd);
-				delete response;
+				if (!request->isAsync())
+				{
+					Response *response = new Response(bResult ? protocol::RESULT_DELETED: protocol::RESULT_NOT_FOUND, request);
+					response->write(exp);
+					response->send(m_sockfd);
+					delete response;
+				}
 				break;
 			}
 
@@ -333,9 +369,9 @@ int Server::main(int argc, char **argv)
 			continue;
 		}
 
-		packet->setupBuffer(CONFIG_SIZEOF_PACKET_HEADER, recvResult);
+		packet->setupBuffer(recvResult);
 
-		protocol::Header *header = (protocol::Header *) packet->getHeader();
+		protocol::Header *header = packet->getHeader();
 
 		UINT64 nodeId = 0;
 
@@ -350,6 +386,8 @@ int Server::main(int argc, char **argv)
 		if (iter == rmap.end())
 		{
 			request = new Request();
+			rmap[nodeId] = request;
+			iter = rmap.find(nodeId);
 		}
 		else
 		{

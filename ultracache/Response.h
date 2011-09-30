@@ -4,11 +4,12 @@
 #include "Protocol.h"
 #include "Request.h"
 #include "PacketWriter.h"
+#include "socketdefs.h"
 
 class Response : public PacketWriter
 {
 public:
-	Response(protocol::Commands cmd, Request *request);
+	Response(protocol::Commands cmd, const struct sockaddr_in &remoteAddr, unsigned int _rid);
 
 
 public:

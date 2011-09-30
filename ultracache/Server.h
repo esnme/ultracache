@@ -11,6 +11,8 @@ private:
 	typedef std::map<UINT64, Request *> REQUESTMAP;
 
 public:
+	Server();
+	~Server();
 	int main(int argc, char **argv);
 	
 private:
@@ -20,5 +22,7 @@ private:
 private:
 	SOCKET createSocket(int port);
 	void decodeRequest(Request *request);
+
+	UINT8 *m_buffer;
 
 };

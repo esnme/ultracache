@@ -133,16 +133,16 @@ int PacketReader::copyToBuffer(UINT8 *buffer, size_t cbBuffer)
 			return -1;
 		}
 
-		memcpy (buffer, packet->getPayload(), packet->getPayloadSize());
-		buffer += packet->getPayloadSize();
-		cbSize += packet->getPayloadSize();
+		memcpy (buffer, packet->getPayload(), cbPayload);
+		buffer += cbPayload;
+		cbSize += cbPayload;
 
 		Packet *free = packet;
 		packet = packet->next;
 		delete free;
 	}
 
-	m_head = NULL;
+	m_head = m_tail = NULL;
 
 	return (int) cbSize;
 }

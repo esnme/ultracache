@@ -15,8 +15,8 @@ void Response::operator delete (void *_p)
 	s_alloc.Free ( (Response *) _p);
 }
 
-Response::Response(protocol::Commands cmd, Request *request) 
-	: PacketWriter(cmd, request->getRemoteAddr(), ((protocol::Header *)request->getPackets()->getHeader())->rid)
+Response::Response(protocol::Commands cmd, const struct sockaddr_in &remoteAddr, unsigned int _rid) 
+	: PacketWriter(cmd, remoteAddr, _rid)
 {
 }
 

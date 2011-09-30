@@ -16,17 +16,17 @@ public:
 	virtual ~Client(void);
 
 	//IUltraCache
-	bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
-	bool del(const char *key, size_t cbKey, time_t *expiration);
-	bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
+	bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
+	bool del(const char *key, size_t cbKey, time_t *expiration, bool bAsync);
+	bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
 
-	bool replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
-	bool append(const char *key, size_t cbKey, void *data, size_t cbData);
-	bool prepend(const char *key, size_t cbKey, void *data, size_t cbData);
+	bool replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
+	bool append(const char *key, size_t cbKey, void *data, size_t cbData, bool bAsync);
+	bool prepend(const char *key, size_t cbKey, void *data, size_t cbData, bool bAsync);
 	
-	bool cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags);
-	bool incr(const char *key, size_t cbKey, UINT64 increment);
-	bool decr(const char *key, size_t cbKey, UINT64 decrement);
+	bool cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
+	bool incr(const char *key, size_t cbKey, UINT64 increment, bool bAsync);
+	bool decr(const char *key, size_t cbKey, UINT64 decrement, bool bAsync);
 	bool version(char **version, size_t *cbVersion);
 	
 	HANDLE get(const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas);
@@ -34,7 +34,7 @@ public:
 	//=======
 
 	bool isConnected();
-	void connect(const sockaddr_in &remoteAddr);
+	bool connect(const sockaddr_in &remoteAddr);
 	void disconnect(void);
 	
 	virtual void wouldSleep(int msec);
@@ -70,6 +70,6 @@ private:
 
 	int m_timeout;
 
-	UINT8 m_buffer[CONFIG_MAX_REQUEST_SIZE];
+	UINT8 *m_buffer;
 	size_t m_cbBuffer;
 };

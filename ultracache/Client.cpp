@@ -7,8 +7,8 @@
 
 #include <assert.h>
 
-#error "Implement rest of API"
-#error "Implement async handling"
+//FIXME: "Implement async handling"
+//FIXME: "Implement multi-get"
 
 Client::Client(int timeoutSEC) 
 {
@@ -17,10 +17,12 @@ Client::Client(int timeoutSEC)
 	m_error = Client::SUCCESS;
 	m_timeout = timeoutSEC;
 
+	m_buffer = new UINT8[CONFIG_MAX_REQUEST_SIZE];
 }
 
 Client::~Client(void)
 {
+	delete m_buffer;
 	disconnect();
 }
 
@@ -102,7 +104,7 @@ Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr)
 			return NULL;
 
 		default:
-			packet->setupBuffer(CONFIG_SIZEOF_PACKET_HEADER, result);
+			packet->setupBuffer(result);
 			return packet;
 		}
 	}
@@ -154,7 +156,7 @@ bool Client::readResponse(PacketReader &reader, ByteStream &bs)
 
 
 
-bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags)
+bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync)
 {
 	if (!isConnected())
 	{
@@ -197,6 +199,11 @@ bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_
 	writer.write((UINT32) flags);
 	writer.send(m_sockfd);
 
+	if (bAsync)
+	{
+		return true;
+	}
+
 	ByteStream bs;
 	PacketReader reader;
 	
@@ -217,7 +224,7 @@ bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_
 	return true;
 }
 
-bool Client::del(const char *key, size_t cbKey, time_t *expiration)
+bool Client::del(const char *key, size_t cbKey, time_t *expiration, bool bAsync)
 {
 	if (!isConnected())
 	{
@@ -250,6 +257,11 @@ bool Client::del(const char *key, size_t cbKey, time_t *expiration)
 	writer.write((UINT8 *) key, cbKey);
 	writer.send(m_sockfd);
 
+	if (bAsync)
+	{
+		return true;
+	}
+
 	ByteStream bs;
 	PacketReader reader;
 	
@@ -269,7 +281,7 @@ bool Client::del(const char *key, size_t cbKey, time_t *expiration)
 	return true;
 }
 
-bool Client::add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags)
+bool Client::add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync)
 {
 	if (!isConnected())
 	{
@@ -312,6 +324,11 @@ bool Client::add(const char *key, size_t cbKey, void *data, size_t cbData, time_
 	writer.write((UINT32) flags);
 	writer.send(m_sockfd);
 
+	if (bAsync)
+	{
+		return true;
+	}
+
 	ByteStream bs;
 	PacketReader reader;
 	
@@ -332,7 +349,7 @@ bool Client::add(const char *key, size_t cbKey, void *data, size_t cbData, time_
 	return true;
 }
 
-bool Client::replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags)
+bool Client::replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync)
 {
 	if (!isConnected())
 	{
@@ -375,6 +392,11 @@ bool Client::replace(const char *key, size_t cbKey, void *data, size_t cbData, t
 	writer.write((UINT32) flags);
 	writer.send(m_sockfd);
 
+	if (bAsync)
+	{
+		return true;
+	}
+
 	ByteStream bs;
 	PacketReader reader;
 	
@@ -395,7 +417,7 @@ bool Client::replace(const char *key, size_t cbKey, void *data, size_t cbData, t
 	return true;
 }
 
-bool Client::append(const char *key, size_t cbKey, void *data, size_t cbData)
+bool Client::append(const char *key, size_t cbKey, void *data, size_t cbData, bool bAsync)
 {
 	if (!isConnected())
 	{
@@ -434,6 +456,11 @@ bool Client::append(const char *key, size_t cbKey, void *data, size_t cbData)
 	writer.write((UINT8 *) data, cbData);
 	writer.send(m_sockfd);
 
+	if (bAsync)
+	{
+		return true;
+	}
+
 	ByteStream bs;
 	PacketReader reader;
 	
@@ -454,7 +481,7 @@ bool Client::append(const char *key, size_t cbKey, void *data, size_t cbData)
 	return true;
 }
 
-bool Client::prepend(const char *key, size_t cbKey, void *data, size_t cbData)
+bool Client::prepend(const char *key, size_t cbKey, void *data, size_t cbData, bool bAsync)
 {
 	if (!isConnected())
 	{
@@ -493,6 +520,11 @@ bool Client::prepend(const char *key, size_t cbKey, void *data, size_t cbData)
 	writer.write((UINT8 *) data, cbData);
 	writer.send(m_sockfd);
 
+	if (bAsync)
+	{
+		return true;
+	}
+
 	ByteStream bs;
 	PacketReader reader;
 	
@@ -513,7 +545,7 @@ bool Client::prepend(const char *key, size_t cbKey, void *data, size_t cbData)
 	return true;
 }
 	
-bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags)
+bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags, bool bAsync)
 {
 	if (!isConnected())
 	{
@@ -558,6 +590,11 @@ bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, si
 	writer.write((UINT32) flags);
 	writer.send(m_sockfd);
 
+	if (bAsync)
+	{
+		return true;
+	}
+
 	ByteStream bs;
 	PacketReader reader;
 	
@@ -578,24 +615,224 @@ bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, si
 	return true;
 }
 
-bool Client::incr(const char *key, size_t cbKey, UINT64 increment)
+bool Client::incr(const char *key, size_t cbKey, UINT64 increment, bool bAsync)
 {
-	return false;
+	if (!isConnected())
+	{
+		setError(NOT_CONNECTED);
+		return false;
+	}
+
+	/*
+	Request:
+	UINT8 key
+	[key]
+	UINT64 value
+
+	Reply:
+
+	*/
+
+	PacketWriter writer(protocol::INCR, m_remoteAddr, getNextRid());
+
+	if (cbKey > CONFIG_KEY_LENGTH)
+	{
+		setError(KEY_TOO_LONG);
+		return false;
+	}
+
+	writer.write((UINT8) cbKey);
+	writer.write((UINT8 *) key, cbKey);
+	writer.write((UINT64) increment);
+	writer.send(m_sockfd);
+
+	if (bAsync)
+	{
+		return true;
+	}
+	
+	ByteStream bs;
+	PacketReader reader;
+	
+	if (!readResponse(reader, bs))
+	{
+		return false;
+	}
+
+	switch (reader.getCommand())
+	{
+		case protocol::RESULT_STORED: return true;
+		case protocol::RESULT_NOT_FOUND: return false;
+		default: 
+			assert (false);
+			return false;
+	}
+
+	//FIXME: Server's gonna send us new value back, do we really want to ignore it?
+
+	return true;
 }
 
-bool Client::decr(const char *key, size_t cbKey, UINT64 decrement)
+bool Client::decr(const char *key, size_t cbKey, UINT64 decrement, bool bAsync)
 {
-	return false;
+	if (!isConnected())
+	{
+		setError(NOT_CONNECTED);
+		return false;
+	}
+
+	/*
+	Request:
+	UINT8 key
+	[key]
+	UINT64 value
+
+	Reply:
+
+	*/
+
+	PacketWriter writer(protocol::DECR, m_remoteAddr, getNextRid());
+
+	if (cbKey > CONFIG_KEY_LENGTH)
+	{
+		setError(KEY_TOO_LONG);
+		return false;
+	}
+
+	writer.write((UINT8) cbKey);
+	writer.write((UINT8 *) key, cbKey);
+	writer.write((UINT64) decrement);
+	writer.send(m_sockfd);
+	
+	if (bAsync)
+	{
+		return true;
+	}
+
+	ByteStream bs;
+	PacketReader reader;
+	
+	if (!readResponse(reader, bs))
+	{
+		return false;
+	}
+
+	switch (reader.getCommand())
+	{
+		case protocol::RESULT_STORED: return true;
+		case protocol::RESULT_NOT_FOUND: return false;
+		default: 
+			assert (false);
+			return false;
+	}
+
+	//FIXME: Server's gonna send us new value back, do we really want to ignore it?
+
+	return true;
 }
 
 bool Client::version(char **version, size_t *cbVersion)
 {
-	return false;
+	if (!isConnected())
+	{
+		setError(NOT_CONNECTED);
+		return false;
+	}
+
+	/*
+	Reply:
+	UINT8 versionLen
+	[version]
+
+	*/
+
+	PacketWriter writer(protocol::VERSION, m_remoteAddr, getNextRid());
+	writer.send(m_sockfd);
+
+	ByteStream bs;
+	PacketReader reader;
+	
+	if (!readResponse(reader, bs))
+	{
+		return false;
+	}
+
+	switch (reader.getCommand())
+	{
+		case protocol::RESULT_VERSION: 
+			break;
+
+		default: 
+			assert (false);
+			return false;
+	}
+
+	*cbVersion = bs.readUINT8();
+	*version = (char *) bs.read(*cbVersion);
+	return true;
 }
 	
 HANDLE Client::get(const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas)
 {
-	return NULL;
+	if (!isConnected())
+	{
+		setError(NOT_CONNECTED);
+		return false;
+	}
+
+	/*
+	Request:
+	UINT8 key
+	[key]
+	UINT64 value
+
+	Reply:
+
+	*/
+
+	PacketWriter writer(protocol::GET, m_remoteAddr, getNextRid());
+
+	if (cbKey > CONFIG_KEY_LENGTH)
+	{
+		setError(KEY_TOO_LONG);
+		return NULL;
+	}
+
+	writer.write((UINT8) cbKey);
+	writer.write((UINT8 *) key, cbKey);
+	writer.send(m_sockfd);
+
+	ByteStream bs;
+	PacketReader reader;
+	
+	if (!readResponse(reader, bs))
+	{
+		return false;
+	}
+
+	switch (reader.getCommand())
+	{
+		case protocol::RESULT_GET:
+			break;
+		case protocol::RESULT_NOT_FOUND: 
+			//FIXME: Server sends key back here, do we really want it?
+			return false;
+		default: 
+			assert (false);
+			return false;
+	}
+
+	size_t outKeyLen = bs.readUINT8();
+	UINT8 *outKey = bs.read(outKeyLen);
+
+	*_outFlags = bs.readUINT32();
+	*_outCas = bs.readUINT64();
+
+	*_cbOutValue = bs.readUINT32();
+	*outValue = bs.read(*_cbOutValue);
+
+	return (Client::HANDLE) m_buffer;
+
 }
 
 void Client::release(HANDLE handle)
@@ -604,15 +841,39 @@ void Client::release(HANDLE handle)
 
 bool Client::isConnected()
 {
-	return false;
+	return (m_sockfd > 0);
 }
 
-void Client::connect(const sockaddr_in &remoteAddr)
+bool Client::connect(const sockaddr_in &remoteAddr)
 {
+	disconnect();
+
 	m_remoteAddr = remoteAddr;
+
+	SOCKET sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+	
+	if (sockfd == -1)
+	{
+		return false;
+	}
+
+	SocketSetNonBlock(sockfd, true);
+	
+	::connect(sockfd, (sockaddr *) &m_remoteAddr, sizeof(struct sockaddr_in));
+
+	m_sockfd = sockfd;
+
+	return true;
 }
 
 void Client::disconnect(void)
 {
+	if (m_sockfd == -1)
+	{
+		return;
+	}
+
+	SocketClose(m_sockfd);
+	m_sockfd = -1;
 }
 

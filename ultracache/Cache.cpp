@@ -106,7 +106,7 @@ Hash::HashItem *Cache::growAndReplace(Hash::HASHCODE hash, Hash::HashItem *item,
 }
 
 
-bool Cache::set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags)
+bool Cache::set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
 	size_t cbKeyAligned;
@@ -154,7 +154,7 @@ bool Cache::set(const char *key, size_t cbKey, void *data, size_t cbData, time_t
 	return true;
 }
 
-bool Cache::del(const char *key, size_t cbKey, time_t *expiration)
+bool Cache::del(const char *key, size_t cbKey, time_t *expiration, bool bAsync)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
 	size_t cbKeyAligned;
@@ -175,7 +175,7 @@ bool Cache::del(const char *key, size_t cbKey, time_t *expiration)
 	return true;
 }
 
-bool Cache::add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags)
+bool Cache::add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
 	size_t cbKeyAligned;
@@ -206,7 +206,7 @@ bool Cache::add(const char *key, size_t cbKey, void *data, size_t cbData, time_t
 	return true;
 }
 
-bool Cache::replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags)
+bool Cache::replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
 	size_t cbKeyAligned;
@@ -237,7 +237,7 @@ bool Cache::replace(const char *key, size_t cbKey, void *data, size_t cbData, ti
 	return true;
 }
 
-bool Cache::append(const char *key, size_t cbKey, void *data, size_t cbData)
+bool Cache::append(const char *key, size_t cbKey, void *data, size_t cbData, bool bAsync)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
 	size_t cbKeyAligned;
@@ -271,7 +271,7 @@ bool Cache::append(const char *key, size_t cbKey, void *data, size_t cbData)
 	return true;
 }
 
-bool Cache::prepend(const char *key, size_t cbKey, void *data, size_t cbData)
+bool Cache::prepend(const char *key, size_t cbKey, void *data, size_t cbData, bool bAsync)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
 	size_t cbKeyAligned;
@@ -308,7 +308,7 @@ bool Cache::prepend(const char *key, size_t cbKey, void *data, size_t cbData)
 	return true;
 }
 	
-bool Cache::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags)
+bool Cache::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags, bool bAsync)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
 	size_t cbKeyAligned;
@@ -435,12 +435,12 @@ bool Cache::incrementDecrement(const char *key, size_t cbKey, UINT64 number, boo
 	return true;
 }
 
-bool Cache::incr(const char *key, size_t cbKey, UINT64 increment)
+bool Cache::incr(const char *key, size_t cbKey, UINT64 increment, bool bAsync)
 {
 	return incrementDecrement(key, cbKey, increment, true);
 }
 
-bool Cache::decr(const char *key, size_t cbKey, UINT64 decrement)
+bool Cache::decr(const char *key, size_t cbKey, UINT64 decrement, bool bAsync)
 {
 	return incrementDecrement(key, cbKey, decrement, false);
 }

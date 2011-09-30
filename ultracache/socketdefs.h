@@ -10,6 +10,7 @@ typedef int socklen_t;
 #define SocketClose(_fd) closesocket((_fd))
 #define SocketWouldBlock(_fd) (WSAGetLastError () == WSAEWOULDBLOCK)
 #define SocketEINPROGRESS(_fd) (WSAGetLastError () == WSAEINPROGRESS)
+#define MSECSleep(_ms) Sleep((_ms))
 
 #define SocketGetLastError()  ((int) WSAGetLastError ())
 
@@ -48,6 +49,8 @@ typedef int SOCKET;
 } \
 
 #define SocketGetLastError() (errno)
+
+#define MSECSleep(_ms) usleep((_ms) * 1000)
 
 #endif
 

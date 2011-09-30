@@ -30,6 +30,7 @@ private:
 	struct sockaddr_in m_remoteAddr;
 	
 	UINT8 *m_offset;
+	UINT8 *m_start;
 	UINT8 *m_end;
 
 	size_t m_packets;

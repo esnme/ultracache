@@ -9,8 +9,9 @@ PacketWriter::PacketWriter(protocol::Commands cmd, const struct sockaddr_in &_re
 	m_cmd = cmd;
 	m_rid = _rid;
 	m_remoteAddr = _remoteAddr;
-	
+	m_tail = m_head = NULL;
 	m_offset = m_end = NULL;
+	m_packets = 0;
 
 	preparePacket();
 	((protocol::Header *)m_head->getHeader())->first = 1;
@@ -28,7 +29,7 @@ PacketWriter::~PacketWriter(void)
 
 void PacketWriter::ensureSmallSpace(size_t sz)
 {
-	if (m_end < m_offset >= sz)
+	if (m_end - m_offset >= sz)
 	{
 		return;
 	}
@@ -41,10 +42,10 @@ void PacketWriter::preparePacket()
 {
 	//FIXME: Must update existing packet's size here
 
-	assert (m_offset == m_end);
+	m_packets ++;
 
 	Packet *packet = new Packet();
-	packet->setupBuffer(CONFIG_SIZEOF_PACKET_HEADER, CONFIG_SIZEOF_PACKET_HEADER);
+	packet->setupBuffer(0);
 	
 	protocol::Header *header = (protocol::Header *) packet->getHeader();
 
@@ -69,12 +70,13 @@ void PacketWriter::preparePacket()
 	}
 	else
 	{
-		m_tail->setupBuffer(CONFIG_SIZEOF_PACKET_HEADER, CONFIG_SIZEOF_PACKET_HEADER + (m_end - m_offset));
+		m_tail->setupBuffer(sizeof(protocol::Header) + (m_offset - m_start));
 		m_tail->next = packet;
 		m_tail = packet;
 	}
 
-	m_offset = packet->getPayload();
+	m_start = packet->getPayload();
+	m_offset = m_start;
 	m_end = m_offset + packet->getBufferSize();
 
 
@@ -101,6 +103,7 @@ void PacketWriter::write(UINT8 *data, size_t cbData)
 		
 		memcpy(m_offset, data, bytesToCopy);
 
+		m_offset += bytesToCopy;
 		data += bytesToCopy;
 		bytesLeft -= bytesToCopy;
 	}
@@ -133,6 +136,8 @@ void PacketWriter::write(UINT64 value)
 
 void PacketWriter::send(SOCKET sockfd)
 {
+	m_tail->setupBuffer(sizeof(protocol::Header) + (m_offset - m_start));
+
 	protocol::Header *tail = (protocol::Header *) m_tail->getHeader();
 	protocol::Header *head = (protocol::Header *) m_head->getHeader();
 
@@ -143,12 +148,13 @@ void PacketWriter::send(SOCKET sockfd)
 
 	while (packet)
 	{
-		sendto(sockfd, (char *) packet->getHeader(), packet->getPayloadSize(), MSG_NOSIGNAL, (sockaddr *) &m_remoteAddr, sizeof (struct sockaddr_in));
+		sendto(sockfd, (char *) packet->getHeader(), packet->getTotalSize(), MSG_NOSIGNAL, (sockaddr *) &m_remoteAddr, sizeof (struct sockaddr_in));
 		Packet *free = packet;
 		packet = packet->next;
 		delete free;
 	}
 
+	m_head = m_tail = NULL;
 
 }
 

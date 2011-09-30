@@ -15,14 +15,14 @@ void Packet::operator delete (void *_p)
 	s_alloc.Free ( (Packet *) _p);
 }
 
-UINT8 *Packet::getHeader()
+protocol::Header *Packet::getHeader()
 {
-	return m_buffer;
+	return (protocol::Header *) m_buffer;
 }
 
 UINT8 *Packet::getPayload()
 {
-	return m_payload;
+	return (UINT8 *)(((protocol::Header *) m_buffer) + 1);
 }
 
 size_t Packet::getBufferSize()
@@ -30,14 +30,17 @@ size_t Packet::getBufferSize()
 	return sizeof(m_buffer);
 }
 
-void Packet::setupBuffer(size_t cbHeader, size_t cbTotal)
+void Packet::setupBuffer(size_t cbTotal)
 {
-	m_cbHeader = cbHeader;
-	m_payload = m_buffer + cbHeader;
-
+	m_cbTotal = cbTotal;
 }
 
 size_t Packet::getPayloadSize()
 {
-	return getBufferSize() - m_cbHeader;
+	return m_cbTotal - sizeof(protocol::Header);
+}
+
+size_t Packet::getTotalSize()
+{
+	return m_cbTotal;
 }
