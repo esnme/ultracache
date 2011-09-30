@@ -69,21 +69,17 @@ void Server::decodeRequest(Request *request)
 	UINT8 buffer[CONFIG_MAX_REQUEST_SIZE];
 	UINT8 *offset = buffer;
 
-	Packet *packet = request->getPackets();
-	
-	assert(packet);
+	int cbBuffer = request->copyToBuffer(buffer, CONFIG_MAX_REQUEST_SIZE);
 
-	while (packet)
+	if (cbBuffer == -1)
 	{
-		memcpy (offset, packet->getPayload(), packet->getPayloadSize());
-		offset += packet->getPayloadSize();
-		packet = packet->next;
+		return;
 	}
 
 
 	try
 	{
-		ByteStream bs(buffer, (offset - buffer));
+		ByteStream bs(buffer, (size_t) cbBuffer);
 		/*
 		bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
 		bool del(const char *key, size_t cbKey, time_t *expiration);

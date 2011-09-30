@@ -3,13 +3,16 @@
 #include "types.h"
 #include "IUltraCache.h"
 #include "socketdefs.h"
+#include "Packet.h"
+#include "PacketReader.h"
+#include "ByteStream.h"
 
 #include <time.h>
 
 class Client : public IUltraCache
 {
 public:
-	Client(void);
+	Client(int timeoutSEC);
 	virtual ~Client(void);
 
 	//IUltraCache
@@ -37,6 +40,7 @@ public:
 	virtual void wouldSleep(int msec);
 	virtual int wouldBlock(SOCKET fd, int op, const timeval *tv);
 
+
 public:
 	enum Errors
 	{
@@ -44,6 +48,8 @@ public:
 		NOT_CONNECTED,
 		KEY_TOO_LONG,
 		VALUE_TO_LONG,
+		PROTOCOL_ERROR,
+		CONNECTION_TIMEDOUT,
 	};
 
 	Errors getError();
@@ -51,6 +57,9 @@ public:
 private:
 	unsigned int getNextRid();
 	void setError(Errors _error);
+	Packet *waitForPacket(struct sockaddr_in *outRemoteAddr);
+	
+	bool readResponse(PacketReader &reader, ByteStream &bs);
 
 private:
 	SOCKET m_sockfd;
@@ -58,4 +67,9 @@ private:
 
 	struct sockaddr_in m_remoteAddr;
 	Errors m_error;
+
+	int m_timeout;
+
+	UINT8 m_buffer[CONFIG_MAX_REQUEST_SIZE];
+	size_t m_cbBuffer;
 };

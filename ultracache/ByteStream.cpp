@@ -9,6 +9,13 @@ ByteStream::ByteStream(void *buffer, size_t cbBuffer)
 	m_start = m_offset;
 }
 
+ByteStream::ByteStream(void)
+{
+	m_offset = (UINT8 *) 0;
+	m_end = m_offset + 0;
+	m_start = m_offset;
+}
+
 UINT8 *ByteStream::read(size_t cbBytes)
 {
 	if ((m_end - m_offset) < cbBytes)

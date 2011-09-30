@@ -12,6 +12,7 @@ public:
 
 public:
 	ByteStream(void *buffer, size_t cbBuffer);
+	ByteStream(void);
 
 	UINT8 *read(size_t cbBytes);
 	UINT8 readUINT8();

@@ -116,3 +116,33 @@ const struct sockaddr_in &PacketReader::getRemoteAddr()
 {
 	return m_remoteAddr;
 }
+
+int PacketReader::copyToBuffer(UINT8 *buffer, size_t cbBuffer)
+{
+	Packet *packet = m_head;
+	size_t cbSize = 0;
+	
+	assert(packet);
+
+	while (packet)
+	{
+		size_t cbPayload = packet->getPayloadSize();
+
+		if (cbSize + cbPayload > cbBuffer)
+		{
+			return -1;
+		}
+
+		memcpy (buffer, packet->getPayload(), packet->getPayloadSize());
+		buffer += packet->getPayloadSize();
+		cbSize += packet->getPayloadSize();
+
+		Packet *free = packet;
+		packet = packet->next;
+		delete free;
+	}
+
+	m_head = NULL;
+
+	return (int) cbSize;
+}
