@@ -1,6 +1,7 @@
 #include "Server.h"
 #include "socketdefs.h"
 
+int tests (int argc, char **argv);
 
 int main (int argc, char **argv)
 {

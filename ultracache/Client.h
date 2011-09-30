@@ -1,45 +1,61 @@
 #pragma once
 
-#include "Hash.h"
-#include "Heap.h"
-#include <time.h>
+#include "types.h"
 #include "IUltraCache.h"
+#include "socketdefs.h"
 
-class Cache : public IUltraCache
+#include <time.h>
+
+class Client : public IUltraCache
 {
-
 public:
-	Cache(size_t mbytes);
-	~Cache(void);
+	Client(void);
+	virtual ~Client(void);
 
-	// IUltraCache
+	//IUltraCache
 	bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
 	bool del(const char *key, size_t cbKey, time_t *expiration);
 	bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
+
 	bool replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags);
 	bool append(const char *key, size_t cbKey, void *data, size_t cbData);
 	bool prepend(const char *key, size_t cbKey, void *data, size_t cbData);
+	
 	bool cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, size_t cbData, time_t expiration, int flags);
 	bool incr(const char *key, size_t cbKey, UINT64 increment);
 	bool decr(const char *key, size_t cbKey, UINT64 decrement);
 	bool version(char **version, size_t *cbVersion);
+	
 	HANDLE get(const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas);
 	void release(HANDLE handle);
+	//=======
 
+	bool isConnected();
+	void connect(const sockaddr_in &remoteAddr);
+	void disconnect(void);
+	
+	virtual void wouldSleep(int msec);
+	virtual int wouldBlock(SOCKET fd, int op, const timeval *tv);
+
+public:
+	enum Errors
+	{
+		SUCCESS,
+		NOT_CONNECTED,
+		KEY_TOO_LONG,
+		VALUE_TO_LONG,
+	};
+
+	Errors getError();
 
 private:
-	static UINT64 *alignKey(const char *key, size_t cbKey, char *buffer, size_t &cbKeyAligned);
-	Hash::HashItem *alloc(size_t cbKey, size_t cbValue, size_t &cbOutSize);
-	UINT64 getNextCas();
-
-	bool incrementDecrement(const char *key, size_t cbKey, UINT64 number, bool bIncr);
-
-	Hash::HashItem *growAndReplace(Hash::HASHCODE hash, Hash::HashItem *item, Hash::HashItem *previous, size_t cbValue);
+	unsigned int getNextRid();
+	void setError(Errors _error);
 
 private:
-	Hash *m_hash;
-	Heap *m_heap;
-		
-	UINT64 m_cas;
+	SOCKET m_sockfd;
+	UINT16 m_rid;
 
+	struct sockaddr_in m_remoteAddr;
+	Errors m_error;
 };

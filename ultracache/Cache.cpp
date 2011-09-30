@@ -43,7 +43,7 @@ UINT64 *Cache::alignKey(const char *key, size_t cbKey, char *buffer, size_t &cbK
 	return (UINT64 *) buffer;
 }
 
-Cache::KwHandle Cache::get(const char *key, size_t cbKey, void **_outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas)
+Cache::HANDLE Cache::get(const char *key, size_t cbKey, void **_outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
 	size_t cbKeyAligned;
@@ -64,7 +64,7 @@ Cache::KwHandle Cache::get(const char *key, size_t cbKey, void **_outValue, size
 	*_outFlags = item->getFlags();
 	*_outCas = item->getCas();
 	
-	return (KwHandle) item;
+	return (Cache::HANDLE) item;
 }
 
 Hash::HashItem *Cache::growAndReplace(Hash::HASHCODE hash, Hash::HashItem *item, Hash::HashItem *previous, size_t cbValue)
@@ -123,7 +123,7 @@ bool Cache::set(const char *key, size_t cbKey, void *data, size_t cbData, time_t
 	if (item)
 	{
 		newItem = growAndReplace(hash, item, previous, cbData);
-		newItem->expire = expiration;
+		newItem->expire = (UINT32) expiration;
 		newItem->flags = flags;
 
 	}
@@ -456,4 +456,9 @@ bool Cache::version(char **version, size_t *cbVersion)
 UINT64 Cache::getNextCas()
 {
 	return m_cas++;
+}
+
+void Cache::release(HANDLE handle)
+{
+	//DUMMY
 }

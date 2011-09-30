@@ -96,7 +96,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDebugDLL</RuntimeLibrary>
       <StructMemberAlignment>Default</StructMemberAlignment>
     </ClCompile>
     <Link>
@@ -133,7 +133,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
       <MultiProcessorCompilation>false</MultiProcessorCompilation>
       <BasicRuntimeChecks>Default</BasicRuntimeChecks>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
@@ -151,11 +151,13 @@
   <ItemGroup>
     <ClCompile Include="ByteStream.cpp" />
     <ClCompile Include="Cache.cpp" />
-    <ClCompile Include="decoder.cpp" />
+    <ClCompile Include="Client.cpp" />
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="Heap.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Packet.cpp" />
+    <ClCompile Include="PacketReader.cpp" />
+    <ClCompile Include="PacketWriter.cpp" />
     <ClCompile Include="Request.cpp" />
     <ClCompile Include="Response.cpp" />
     <ClCompile Include="Server.cpp" />
@@ -164,11 +166,15 @@
   <ItemGroup>
     <ClInclude Include="ByteStream.h" />
     <ClInclude Include="Cache.h" />
+    <ClInclude Include="Client.h" />
     <ClInclude Include="config.h" />
     <ClInclude Include="Hash.h" />
     <ClInclude Include="Heap.h" />
+    <ClInclude Include="IUltraCache.h" />
     <ClInclude Include="JAllocator.h" />
     <ClInclude Include="Packet.h" />
+    <ClInclude Include="PacketReader.h" />
+    <ClInclude Include="PacketWriter.h" />
     <ClInclude Include="Protocol.h" />
     <ClInclude Include="Request.h" />
     <ClInclude Include="Response.h" />

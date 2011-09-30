@@ -64,11 +64,6 @@ SOCKET Server::createSocket(int port)
 	return sockfd;
 }
 
-void Server::sendResponse(Request *request, protocol::Commands cmd, ByteStream *data)
-{
-
-}
-
 void Server::decodeRequest(Request *request)
 {
 	UINT8 buffer[CONFIG_MAX_REQUEST_SIZE];
@@ -265,7 +260,7 @@ void Server::decodeRequest(Request *request)
 				UINT64 cas;
 
 				//VALUE <key> <flags> <bytes> [<cas unique>]\r\n
-				Cache::KwHandle handle = m_cache->get( (char *) key, keyLen, &value, &cbValue, &flags, &cas);
+				Cache::HANDLE handle = m_cache->get( (char *) key, keyLen, &value, &cbValue, &flags, &cas);
 
 				Response *response;
 
@@ -278,6 +273,8 @@ void Server::decodeRequest(Request *request)
 					response->write ( (UINT64) cas);
 					response->write( (UINT32) cbValue);
 					response->write( (UINT8*) value, cbValue);
+
+					m_cache->release(handle);
 				}
 				else
 				{
@@ -346,7 +343,7 @@ int Server::main(int argc, char **argv)
 
 		UINT64 nodeId = 0;
 
-		nodeId |= ( ((UINT64) remoteAddr.sin_addr.S_un.S_addr) << 32ULL);
+		nodeId |= ( ((UINT64) remoteAddr.sin_addr.s_addr) << 32ULL);
 		nodeId |= ( ((UINT64) remoteAddr.sin_port) << 16ULL);
 		nodeId |= ( ((UINT64) header->rid) << 0ULL);
 

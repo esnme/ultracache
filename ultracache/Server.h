@@ -20,7 +20,5 @@ private:
 private:
 	SOCKET createSocket(int port);
 	void decodeRequest(Request *request);
-	void sendResponse(Request *request, protocol::Commands cmd, ByteStream *data);
-
 
 };
