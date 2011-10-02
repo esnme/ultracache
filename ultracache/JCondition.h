@@ -17,6 +17,7 @@ private:
 #else
   pthread_mutex_t m_mutex;
   pthread_cond_t m_condition;
+#endif
 public:
 
   JCondition ()
