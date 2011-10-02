@@ -7,8 +7,10 @@
 Heap::Heap(size_t _cbSize)
 {
 	m_pBase = malloc(_cbSize);//(NULL, _cbSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-
+	
 	m_pStart = (UINT8 *) m_pBase;
+	m_pStart = (UINT8 *) Heap::align(8, (size_t) m_pStart);
+
 	m_pEnd = m_pStart + _cbSize;
 	m_pOffset = m_pStart;
 
