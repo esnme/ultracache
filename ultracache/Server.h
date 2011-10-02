@@ -43,7 +43,7 @@ private:
 
 	UINT8 *m_buffer;
 
-	bool m_bIsRunning;
+	volatile bool m_bIsRunning;
 
 	JThreadQueue<Request *> m_rxQueue;
 	JThreadQueue<Response *> m_txQueue;

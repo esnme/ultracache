@@ -6,6 +6,7 @@
 #include "config.h"
 #include "Server.h"
 #include "Client.h"
+#include "JThread.h"
 
 extern void dumpMem(const char *desc, void *_ptr, size_t cbBytes);
 
@@ -42,10 +43,8 @@ int tests (int argc, char **argv)
 {
 	Server server;
 
-#ifdef _WIN32
-	HANDLE hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) ServerThread, &server, 0, NULL);
-#endif
-	MSECSleep(1000);
+	JThread thread = JThread::createThread(ServerThread, &server);
+	MSECSleep(5000);
 
 	Client client(1);
 
@@ -104,8 +103,7 @@ int tests (int argc, char **argv)
 
 
 #ifdef _WIN32
-	WaitForSingleObject(hThread, INFINITE);
-	CloseHandle(hThread);
+	thread.join();
 
 #endif
 

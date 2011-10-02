@@ -128,7 +128,7 @@ int benchmark (int argc, char **argv)
 
 	for (int index = 0; index < CLIENT_COUNT; index ++)
 	{
-		clients[index] = JThread::createThread(ClientProc, NULL);
+		clients[index] = JThread::createThread(ClientProc, &remoteAddr);
 	}
 
 	UINT64 wlast = 0;

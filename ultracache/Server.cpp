@@ -345,6 +345,12 @@ void Server::txThread()
 	{
 		Response *response;
 		m_txQueue.WaitForItem(response, true);
+	
+		if (response == NULL)
+		{
+			continue;
+		}
+		
 		response->send(m_sockfd);
 		delete response;
 	}
@@ -469,8 +475,8 @@ int Server::main(int argc, char **argv)
 
 	Server::m_cache = new Cache(512);
 
-	m_rxThread[2] = JThread::createThread(RxThreadWrap, this);
-	m_rxThread[3] = JThread::createThread(RxThreadWrap, this);
+	m_rxThread[0] = JThread::createThread(RxThreadWrap, this);
+	m_rxThread[1] = JThread::createThread(RxThreadWrap, this);
 	m_txThread[0] = JThread::createThread(TxThreadWrap, this);
 	m_txThread[1] = JThread::createThread(TxThreadWrap, this);
 
@@ -479,6 +485,11 @@ int Server::main(int argc, char **argv)
 		Request *request;
 		m_rxQueue.WaitForItem(request, true);
 
+		if (request == NULL)
+		{
+			continue;
+		}
+
 		decodeRequest(request);
 
 		delete request;
@@ -486,6 +497,15 @@ int Server::main(int argc, char **argv)
 	}
 
 	SocketClose(sockfd);
+
+	m_txQueue.PostItem(NULL);
+	m_txQueue.PostItem(NULL);
+
+	m_rxThread[0].join();
+	m_rxThread[1].join();
+	m_txThread[0].join();
+	m_txThread[1].join();
+
 	return 0;
 }
 
@@ -493,5 +513,5 @@ int Server::main(int argc, char **argv)
 void Server::shutdown()
 {
 	m_bIsRunning = false;
-	SocketClose(m_sockfd);
+	m_rxQueue.PostItem(NULL);
 }
