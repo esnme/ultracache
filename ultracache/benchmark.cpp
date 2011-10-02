@@ -30,7 +30,7 @@ void *ClientProc(void *arg)
 
 	while (cCount < 100000)
 	{
-		char strKey[16];
+		char strKey[17];
 		sprintf(strKey, "%08x%08x", PortableGetCurrentThreadId(), cCount);
 
 		bool bResult = client.set(strKey, 16, value, valueLen, 0, 0, false);
@@ -56,8 +56,8 @@ void *ClientProc(void *arg)
 		{
 
 			int key = rand () % cCount;
-			char strKey[16];
-			sprintf(strKey, "%08x%08x", PortableGetCurrentThreadId(), key);
+			char strKey[17];
+			sprintf(strKey, "%08x%08x", (DWORD) PortableGetCurrentThreadId(), key);
 
 			handles[index] = client.getMulti(strKey, 16);
 		}
