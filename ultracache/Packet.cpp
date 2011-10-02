@@ -56,3 +56,9 @@ size_t Packet::getTotalSize()
 {
 	return m_cbTotal;
 }
+
+struct sockaddr_in *Packet::getRemoteAddr()
+{
+	return &m_remoteAddr;
+}
+

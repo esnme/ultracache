@@ -6,8 +6,8 @@
 #include "Hash.h"
 
 Server::Server()
-	: m_rxQueue(65536),
-		m_txQueue(65536)
+	: m_rxQueue(1024 * 1024),
+		m_txQueue(1024 * 1024)
 {
 	m_buffer = new UINT8[CONFIG_MAX_REQUEST_SIZE];
 	m_bIsRunning = true;
@@ -127,8 +127,8 @@ void Server::decodeRequest(Request *request)
 				if (!request->isAsync())
 				{
 					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request->getRemoteAddr(), request->getRid());
-					response->send(m_sockfd);
-					delete response;
+					m_txQueue.PostItem(response);;
+					
 				}
 				break;
 			}
@@ -146,8 +146,8 @@ void Server::decodeRequest(Request *request)
 				if (!request->isAsync())
 				{
 					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_STORED, request->getRemoteAddr(), request->getRid());
-					response->send(m_sockfd);
-					delete response;
+					m_txQueue.PostItem(response);;
+					
 				}
 				break;
 			}
@@ -164,8 +164,8 @@ void Server::decodeRequest(Request *request)
 				if (!request->isAsync())
 				{
 					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_STORED, request->getRemoteAddr(), request->getRid());
-					response->send(m_sockfd);
-					delete response;
+					m_txQueue.PostItem(response);;
+					
 				}
 				break;
 			}
@@ -180,8 +180,8 @@ void Server::decodeRequest(Request *request)
 				if (!request->isAsync())
 				{
 					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request->getRemoteAddr(), request->getRid());
-					response->send(m_sockfd);
-					delete response;
+					m_txQueue.PostItem(response);;
+					
 				}
 
 				break;
@@ -197,8 +197,8 @@ void Server::decodeRequest(Request *request)
 				if (!request->isAsync())
 				{
 					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_ERROR_OOM, request->getRemoteAddr(), request->getRid());
-					response->send(m_sockfd);
-					delete response;
+					m_txQueue.PostItem(response);;
+					
 				}
 				break;
 
@@ -217,8 +217,8 @@ void Server::decodeRequest(Request *request)
 				if (!request->isAsync())
 				{
 					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_EXISTS, request->getRemoteAddr(), request->getRid());
-					response->send(m_sockfd);
-					delete response;
+					m_txQueue.PostItem(response);;
+					
 				}
 				break;
 			}
@@ -233,8 +233,8 @@ void Server::decodeRequest(Request *request)
 				{
 					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_FOUND, request->getRemoteAddr(), request->getRid());
 					response->write(value);
-					response->send(m_sockfd);
-					delete response;
+					m_txQueue.PostItem(response);;
+					
 				}
 
 				break;
@@ -250,8 +250,8 @@ void Server::decodeRequest(Request *request)
 				{
 					Response *response = new Response(bResult ? protocol::RESULT_STORED : protocol::RESULT_NOT_FOUND, request->getRemoteAddr(), request->getRid());
 					response->write(value);
-					response->send(m_sockfd);
-					delete response;
+					m_txQueue.PostItem(response);;
+					
 				}
 				break;
 			}
@@ -269,8 +269,8 @@ void Server::decodeRequest(Request *request)
 				{
 					Response *response = new Response(bResult ? protocol::RESULT_DELETED: protocol::RESULT_NOT_FOUND, request->getRemoteAddr(), request->getRid());
 					response->write(exp);
-					response->send(m_sockfd);
-					delete response;
+					m_txQueue.PostItem(response);;
+					
 				}
 				break;
 			}
@@ -321,8 +321,8 @@ void Server::decodeRequest(Request *request)
 					response->write( (UINT8 *) key, keyLen);
 				}
 
-				response->send(m_sockfd);
-				delete response;
+				m_txQueue.PostItem(response);;
+				
 				break;
 			}
 
@@ -339,32 +339,25 @@ void Server::decodeRequest(Request *request)
 
 }
 
-int Server::main(int argc, char **argv)
+void Server::txThread()
 {
-	REQUESTMAP rmap;
-
-	Heap heap(16);
-	Hash hash(65536);
-
-	SOCKET sockfd = Server::createSocket(11211);
-
-	if (sockfd == -1)
-	{
-		return -1;
-	}
-
-	Server::m_sockfd = sockfd;
-
-	Server::m_cache = new Cache(512);
-
 	while (m_bIsRunning)
 	{
-		struct sockaddr_in remoteAddr;
+		Response *response;
+		m_txQueue.WaitForItem(response, true);
+		response->send(m_sockfd);
+		delete response;
+	}
+}
 
+void Server::rxThread()
+{
+	while (m_bIsRunning)
+	{
 		Packet *packet = new Packet();
 		socklen_t addrLen = sizeof(struct sockaddr_in);
 
-		int recvResult = recvfrom (sockfd, (char *) packet->getHeader(), (int) packet->getBufferSize(), MSG_NOSIGNAL, (sockaddr *) &remoteAddr, &addrLen);
+		int recvResult = recvfrom (m_sockfd, (char *) packet->getHeader(), (int) packet->getBufferSize(), MSG_NOSIGNAL, (sockaddr *) packet->getRemoteAddr(), &addrLen);
 
 		if (recvResult == -1)
 		{
@@ -386,31 +379,38 @@ int Server::main(int argc, char **argv)
 
 		packet->setupBuffer(recvResult);
 
+		struct sockaddr_in *remoteAddr = packet->getRemoteAddr();
+
+
 		protocol::Header *header = packet->getHeader();
 
 		UINT64 nodeId = 0;
 
-		nodeId |= ( ((UINT64) remoteAddr.sin_addr.s_addr) << 32ULL);
-		nodeId |= ( ((UINT64) remoteAddr.sin_port) << 16ULL);
+		nodeId |= ( ((UINT64) remoteAddr->sin_addr.s_addr) << 32ULL);
+		nodeId |= ( ((UINT64) remoteAddr->sin_port) << 16ULL);
 		nodeId |= ( ((UINT64) header->rid) << 0ULL);
 
 
-		REQUESTMAP::iterator iter = rmap.find(nodeId);
+		m_rmapSL.enter();
+		REQUESTMAP::iterator iter = m_rmap.find(nodeId);
 
 		Request *request;
 
-		if (iter == rmap.end())
+		if (iter == m_rmap.end())
 		{
 			request = new Request();
-			rmap[nodeId] = request;
-			iter = rmap.find(nodeId);
+			m_rmap[nodeId] = request;
+			iter = m_rmap.find(nodeId);
+			m_rmapSL.leave();
 		}
 		else
 		{
+			m_rmapSL.leave();
+
 			request = iter->second;
 		}
 
-		Request::Result result = request->put(&remoteAddr, packet);
+		Request::Result result = request->put(remoteAddr, packet);
 
 		switch (result)
 		{
@@ -418,18 +418,70 @@ int Server::main(int argc, char **argv)
 			break;
 
 		case Request::COMPLETE:
-			decodeRequest(request);
-			rmap.erase(iter);
-			delete request;
+			m_rmapSL.enter();
+			m_rmap.erase(iter);
+			m_rmapSL.leave();
+
+			m_rxQueue.PostItem(request);
 			break;
 
 			// Fall through
 		case Request::FAILED:
-			rmap.erase(iter);
+			m_rmapSL.enter();
+			m_rmap.erase(iter);
+			m_rmapSL.leave();
 			delete request;
 			break;
 		}
 
+
+
+	}
+}
+
+static void *RxThreadWrap(void *arg)
+{
+	((Server *)arg)->rxThread();
+	return NULL;
+}
+
+static void *TxThreadWrap(void *arg)
+{
+	((Server *)arg)->txThread();
+	return NULL;
+}
+
+int Server::main(int argc, char **argv)
+{
+	REQUESTMAP rmap;
+
+	Heap heap(16);
+	Hash hash(65536);
+
+	SOCKET sockfd = Server::createSocket(11211);
+
+	if (sockfd == -1)
+	{
+		return -1;
+	}
+
+	Server::m_sockfd = sockfd;
+
+	Server::m_cache = new Cache(512);
+
+	m_rxThread[0] = JThread::createThread(RxThreadWrap, this);
+	m_rxThread[1] = JThread::createThread(RxThreadWrap, this);
+	m_txThread[0] = JThread::createThread(TxThreadWrap, this);
+	m_txThread[1] = JThread::createThread(TxThreadWrap, this);
+
+	while (m_bIsRunning)
+	{
+		Request *request;
+		m_rxQueue.WaitForItem(request, true);
+
+		decodeRequest(request);
+
+		delete request;
 
 	}
 

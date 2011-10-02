@@ -29,7 +29,14 @@ Client::~Client(void)
 
 unsigned int Client::getNextRid()
 {
-	return m_rid ++;
+	m_rid ++;
+
+	if (m_rid == 0)
+	{
+		m_rid ++;
+	}
+
+	return m_rid;
 }
 
 void Client::setError(Errors _error)
@@ -82,7 +89,7 @@ int Client::wouldBlock(SOCKET fd, int op, const timeval *tv)
 	return res;
 }
 
-Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr, unsigned int expRid)
+Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr, unsigned int *expRid)
 {
 	Packet *packet = new Packet();
 
@@ -129,7 +136,7 @@ Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr, unsigned int ex
 
 			packet->setupBuffer(result);
 
-			if (packet->getHeader()->rid != expRid)
+			if (expRid && packet->getHeader()->rid != *expRid)
 			{
 				delete packet;
 				return NULL;
@@ -142,7 +149,7 @@ Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr, unsigned int ex
 	return NULL;
 }
 
-bool Client::readResponse(PacketReader &reader, ByteStream &bs, unsigned int expRid)
+bool Client::readResponse(PacketReader &reader, ByteStream &bs, unsigned int *expRid)
 {
 	Packet *packet;
 	struct sockaddr_in remoteAddr;
@@ -242,7 +249,9 @@ bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs, writer.getRid()))
+	unsigned int rid = writer.getRid();
+
+	if (!readResponse(reader, bs, &rid))
 	{
 		return false;
 	}
@@ -301,8 +310,10 @@ bool Client::del(const char *key, size_t cbKey, time_t *expiration, bool bAsync)
 
 	ByteStream bs;
 	PacketReader reader;
-	
-	if (!readResponse(reader, bs, writer.getRid()))
+
+	unsigned int rid = writer.getRid();
+		
+	if (!readResponse(reader, bs, &rid))
 	{
 		return false;
 	}
@@ -368,8 +379,10 @@ bool Client::add(const char *key, size_t cbKey, void *data, size_t cbData, time_
 
 	ByteStream bs;
 	PacketReader reader;
+
+	unsigned int rid = writer.getRid();
 	
-	if (!readResponse(reader, bs, writer.getRid()))
+	if (!readResponse(reader, bs, &rid))
 	{
 		return false;
 	}
@@ -437,7 +450,9 @@ bool Client::replace(const char *key, size_t cbKey, void *data, size_t cbData, t
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs, writer.getRid()))
+	unsigned int rid = writer.getRid();
+
+	if (!readResponse(reader, bs, &rid))
 	{
 		return false;
 	}
@@ -501,7 +516,9 @@ bool Client::append(const char *key, size_t cbKey, void *data, size_t cbData, bo
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs, writer.getRid()))
+	unsigned int rid = writer.getRid();
+
+	if (!readResponse(reader, bs, &rid))
 	{
 		return false;
 	}
@@ -565,7 +582,9 @@ bool Client::prepend(const char *key, size_t cbKey, void *data, size_t cbData, b
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs, writer.getRid()))
+	unsigned int rid = writer.getRid();
+
+	if (!readResponse(reader, bs, &rid))
 	{
 		return false;
 	}
@@ -634,8 +653,10 @@ bool Client::cas(const char *key, size_t cbKey, UINT64 casUnique, void *data, si
 
 	ByteStream bs;
 	PacketReader reader;
-	
-	if (!readResponse(reader, bs, writer.getRid()))
+
+	unsigned int rid = writer.getRid();
+
+	if (!readResponse(reader, bs, &rid))
 	{
 		return false;
 	}
@@ -691,7 +712,9 @@ bool Client::incr(const char *key, size_t cbKey, UINT64 increment, bool bAsync)
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs, writer.getRid()))
+	unsigned int rid = writer.getRid();
+
+	if (!readResponse(reader, bs, &rid))
 	{
 		return false;
 	}
@@ -749,7 +772,9 @@ bool Client::decr(const char *key, size_t cbKey, UINT64 decrement, bool bAsync)
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs, writer.getRid()))
+	unsigned int rid = writer.getRid();
+
+	if (!readResponse(reader, bs, &rid))
 	{
 		return false;
 	}
@@ -788,8 +813,11 @@ bool Client::version(char **version, size_t *cbVersion)
 
 	ByteStream bs;
 	PacketReader reader;
+
+	unsigned int rid = writer.getRid();
+
 	
-	if (!readResponse(reader, bs, writer.getRid()))
+	if (!readResponse(reader, bs, &rid))
 	{
 		return false;
 	}
@@ -852,7 +880,25 @@ bool Client::readMulti(MGETHANDLE *handles, size_t cHandles, int &offset, const 
 	ByteStream bs;
 	PacketReader reader;
 	
-	if (!readResponse(reader, bs, handles[offset]))
+	if (!readResponse(reader, bs, NULL))
+	{
+		return false;
+	}
+
+	unsigned int rid = reader.getRid();
+
+	int index = 0;
+
+	for (; index < cHandles; index ++)
+	{
+		if (handles[index] == rid)
+		{
+			handles[index] = 0;
+			break;
+		}
+	}
+
+	if (index == cHandles)
 	{
 		return false;
 	}
@@ -919,8 +965,10 @@ HANDLE Client::get(const char *key, size_t cbKey, void **outValue, size_t *_cbOu
 
 	ByteStream bs;
 	PacketReader reader;
-	
-	if (!readResponse(reader, bs, writer.getRid()))
+
+	unsigned int rid = writer.getRid();
+
+	if (!readResponse(reader, bs, &rid))
 	{
 		return NULL;
 	}

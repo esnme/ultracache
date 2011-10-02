@@ -7,6 +7,8 @@
 #include <hash_map>
 #include "JThreadQueue.h"
 #include "Response.h"
+#include "JThread.h"
+#include "Spinlock.h"
 
 class Server
 {
@@ -19,6 +21,7 @@ public:
 	int main(int argc, char **argv);
 	void shutdown();
 	void rxThread();
+	void txThread();
 
 private:
 	Cache *m_cache;
@@ -36,4 +39,9 @@ private:
 	JThreadQueue<Request *> m_rxQueue;
 	JThreadQueue<Response *> m_txQueue;
 
+	JThread m_rxThread[2];
+	JThread m_txThread[2];
+
+	Spinlock m_rmapSL;
+	REQUESTMAP m_rmap;
 };
