@@ -15,14 +15,14 @@
 #include "Spinlock.h"
 #include "types.h"
 
-#ifndef __gnu_cxx
-#define __gnu_cxx std
-#endif
-
 class Server
 {
 private:
+#ifdef _WIN32
+	typedef std::hash_map<UINT64, Request *> REQUESTMAP;
+#else
 	typedef __gnu_cxx::hash_map<UINT64, Request *> REQUESTMAP;
+#endif
 
 public:
 	Server();
