@@ -50,7 +50,7 @@ int tests (int argc, char **argv)
 	Server server;
 
 	JThread thread = JThread::createThread(ServerThread, &server);
-	MSECSleep(5000);
+	MSECSleep(1000);
 
 	Client client(1);
 
