@@ -20,6 +20,8 @@ typedef int socklen_t;
 	ioctlsocket((_fd), FIONBIO, &flags); \
 } \
 
+#define YieldThread() SwitchToThread()
+
 #else
 
 #include <unistd.h>
@@ -51,7 +53,6 @@ typedef int SOCKET;
 #define SocketGetLastError() (errno)
 
 #define MSECSleep(_ms) usleep((_ms) * 1000)
-
 #endif
 
 #ifndef MSG_NOSIGNAL

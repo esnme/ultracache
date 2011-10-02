@@ -65,6 +65,8 @@ void PacketWriter::preparePacket()
 	{
 		assert (m_head == NULL);
 
+		header->first = 1;
+
 		m_head = packet;
 		m_tail = packet;
 		m_tail->next = NULL;

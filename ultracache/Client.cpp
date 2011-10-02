@@ -53,18 +53,33 @@ int Client::wouldBlock(SOCKET fd, int op, const timeval *tv)
 	FD_ZERO(&set);
 	FD_SET(fd, &set);
 
+	WSAPOLLFD pfd;
+	pfd.fd = fd;
+
+
 	switch (op)
 	{
 	case FD_READ: 
-		return select (fd + 1, &set, NULL, NULL, tv);
+		pfd.events = POLLRDNORM;
+		break;
 
 	case FD_WRITE:
-		return select (fd + 1, NULL, &set, NULL, tv);
+		pfd.events = POLLWRNORM;
+		break;
 
 	default:
 		assert (false);
 		return -1;
 	}
+
+	int res = WSAPoll(&pfd, 1, tv->tv_sec * 1000);
+
+	if (res < 1)
+	{
+		return res;
+	}
+
+	return res;
 }
 
 Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr, unsigned int expRid)
@@ -77,6 +92,7 @@ Packet *Client::waitForPacket(struct sockaddr_in *outRemoteAddr, unsigned int ex
 
 	while (true)
 	{
+
 		socklen_t len = sizeof (sockaddr_in);
 		int result = recvfrom(m_sockfd, (char *) packet->getHeader(), packet->getBufferSize(), MSG_NOSIGNAL, (sockaddr *) outRemoteAddr, &len);
 
@@ -145,7 +161,10 @@ bool Client::readResponse(PacketReader &reader, ByteStream &bs, unsigned int exp
 
 		switch (result)
 		{
-		case PacketReader::FAILED: return false;
+		case PacketReader::FAILED: 
+			setError(PROTOCOL_ERROR_SEQUENCE);
+			return false;
+
 		case PacketReader::NEXTPACKET: break;
 
 		case PacketReader::COMPLETE: 
@@ -154,7 +173,7 @@ bool Client::readResponse(PacketReader &reader, ByteStream &bs, unsigned int exp
 
 				if (sz == -1)
 				{
-					setError(PROTOCOL_ERROR);
+					setError(PROTOCOL_ERROR_SIZE);
 					return false;
 				}
 
@@ -172,6 +191,8 @@ bool Client::readResponse(PacketReader &reader, ByteStream &bs, unsigned int exp
 
 bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync)
 {
+	setError(Client::SUCCESS);
+
 	if (!isConnected())
 	{
 		setError(NOT_CONNECTED);
@@ -229,9 +250,11 @@ bool Client::set(const char *key, size_t cbKey, void *data, size_t cbData, time_
 	switch (reader.getCommand())
 	{
 		case protocol::RESULT_STORED: return true;
-		case protocol::RESULT_ERROR_OOM: return false;
+		case protocol::RESULT_ERROR_OOM: 
+			setError(SERVER_ERROR_OOM);
+			return false;
 		default: 
-			assert (false);
+			setError(SERVER_ERROR_UNKNOWN);
 			return false;
 	}
 
@@ -786,6 +809,84 @@ bool Client::version(char **version, size_t *cbVersion)
 	return true;
 }
 	
+Client::MGETHANDLE Client::getMulti(const char *key, size_t cbKey)
+{
+	if (!isConnected())
+	{
+		setError(NOT_CONNECTED);
+		return false;
+	}
+
+	/*
+	Request:
+	UINT8 key
+	[key]
+	UINT64 value
+
+	Reply:
+
+	*/
+
+	PacketWriter writer(protocol::GET, m_remoteAddr, getNextRid(), false);
+
+	if (cbKey > CONFIG_KEY_LENGTH)
+	{
+		setError(KEY_TOO_LONG);
+		return NULL;
+	}
+
+	writer.write((UINT8) cbKey);
+	writer.write((UINT8 *) key, cbKey);
+	writer.send(m_sockfd);
+
+	return (Client::MGETHANDLE) writer.getRid();
+}
+
+bool Client::readMulti(MGETHANDLE *handles, size_t cHandles, int &offset, const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas)
+{
+	if (offset >= cHandles)
+	{
+		return false;
+	}
+
+	ByteStream bs;
+	PacketReader reader;
+	
+	if (!readResponse(reader, bs, handles[offset]))
+	{
+		return false;
+	}
+
+	offset ++;
+	
+	switch (reader.getCommand())
+	{
+		case protocol::RESULT_GET:
+			break;
+		case protocol::RESULT_NOT_FOUND: 
+			*outValue = NULL;
+			*_cbOutValue = 0;
+			//FIXME: Server sends key back here, do we really want it?
+			return true;
+		default: 
+			assert (false);
+			return false;
+	}
+
+	size_t outKeyLen = bs.readUINT8();
+	UINT8 *outKey = bs.read(outKeyLen);
+
+	*_outFlags = bs.readUINT32();
+	*_outCas = bs.readUINT64();
+
+	*_cbOutValue = bs.readUINT32();
+	*outValue = bs.read(*_cbOutValue);
+
+
+	return true;
+}
+
+
 HANDLE Client::get(const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas)
 {
 	if (!isConnected())

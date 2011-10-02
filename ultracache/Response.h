@@ -11,7 +11,6 @@ class Response : public PacketWriter
 public:
 	Response(protocol::Commands cmd, const struct sockaddr_in &remoteAddr, unsigned int _rid);
 
-
 public:
 	static void *operator new (size_t _size);
 	static void operator delete (void *_p);

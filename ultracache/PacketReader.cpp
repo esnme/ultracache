@@ -26,6 +26,25 @@ PacketReader::Result PacketReader::put(struct sockaddr_in *remoteAddr, Packet *p
 {
 	protocol::Header *header = (protocol::Header *) packet->getHeader();
 
+	if (header->first && m_cPackets > 0)
+	{
+		//Reset
+		Packet *packet = m_head;
+
+		while (packet)
+		{
+			Packet *free = packet;
+			delete free;
+			packet = packet->next;
+		}
+
+		this->m_head = NULL;
+		this->m_tail = NULL;
+
+		m_cPackets = 0;
+	}
+
+
 	if (m_cPackets == 0)
 	{
 		m_remoteAddr = *remoteAddr;
@@ -52,6 +71,7 @@ PacketReader::Result PacketReader::put(struct sockaddr_in *remoteAddr, Packet *p
 		// Validate sequence;
 		if (m_nextSeq != header->seq)
 		{
+			fprintf (stderr, "%s: Packet loss!\n", __FUNCTION__);
 			return PacketReader::FAILED;
 		}
 

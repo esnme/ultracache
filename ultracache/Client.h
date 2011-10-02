@@ -12,6 +12,10 @@
 class Client : public IUltraCache
 {
 public:
+
+	typedef unsigned int MGETHANDLE;
+
+public:
 	Client(int timeoutSEC);
 	virtual ~Client(void);
 
@@ -31,6 +35,10 @@ public:
 	
 	HANDLE get(const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas);
 	void release(HANDLE handle);
+
+	MGETHANDLE getMulti(const char *key, size_t cbKey);
+	bool readMulti(MGETHANDLE *handles, size_t cHandles, int &offset, const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas);
+
 	//=======
 
 	bool isConnected();
@@ -50,6 +58,10 @@ public:
 		VALUE_TO_LONG,
 		PROTOCOL_ERROR,
 		CONNECTION_TIMEDOUT,
+		SERVER_ERROR_OOM,
+		SERVER_ERROR_UNKNOWN,
+		PROTOCOL_ERROR_SEQUENCE,
+		PROTOCOL_ERROR_SIZE,
 	};
 
 	Errors getError();
@@ -58,7 +70,6 @@ private:
 	unsigned int getNextRid();
 	void setError(Errors _error);
 	Packet *waitForPacket(struct sockaddr_in *outRemoteAddr, unsigned int expRid);
-	
 	bool readResponse(PacketReader &reader, ByteStream &bs, unsigned int expRid);
 
 private:

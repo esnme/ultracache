@@ -7,4 +7,6 @@ public:
 	static void *operator new (size_t _size);
 	static void operator delete (void *_p);
 
+	Request *next;
+
 };

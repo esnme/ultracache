@@ -149,11 +149,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="benchmark.cpp" />
     <ClCompile Include="ByteStream.cpp" />
     <ClCompile Include="Cache.cpp" />
     <ClCompile Include="Client.cpp" />
     <ClCompile Include="Hash.cpp" />
     <ClCompile Include="Heap.cpp" />
+    <ClCompile Include="JThread.cpp" />
     <ClCompile Include="main.cpp" />
     <ClCompile Include="Packet.cpp" />
     <ClCompile Include="PacketReader.cpp" />
@@ -161,6 +163,7 @@
     <ClCompile Include="Request.cpp" />
     <ClCompile Include="Response.cpp" />
     <ClCompile Include="Server.cpp" />
+    <ClCompile Include="Spinlock.cpp" />
     <ClCompile Include="tests.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -172,6 +175,10 @@
     <ClInclude Include="Heap.h" />
     <ClInclude Include="IUltraCache.h" />
     <ClInclude Include="JAllocator.h" />
+    <ClInclude Include="JCondition.h" />
+    <ClInclude Include="JQueue.h" />
+    <ClInclude Include="JThread.h" />
+    <ClInclude Include="JThreadQueue.h" />
     <ClInclude Include="Packet.h" />
     <ClInclude Include="PacketReader.h" />
     <ClInclude Include="PacketWriter.h" />
@@ -180,6 +187,7 @@
     <ClInclude Include="Response.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="socketdefs.h" />
+    <ClInclude Include="Spinlock.h" />
     <ClInclude Include="types.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

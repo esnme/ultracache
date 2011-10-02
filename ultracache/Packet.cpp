@@ -1,18 +1,30 @@
 #include "Packet.h"
 #include "JAllocator.h"
+#include <Windows.h>
+#include "Spinlock.h"
 
 JAllocator<Packet, 512, true> s_alloc;
 
 //FIXME: Packet shouldn't be agnostic of header size, it makes no sense
 
+
+Spinlock packetSL;
+
+
 void *Packet::operator new (size_t _size)
 {
-	return (void *) s_alloc.Alloc ();
+
+	packetSL.enter();
+	void *ret = s_alloc.Alloc ();
+	packetSL.leave();
+	return ret;
 }
 
 void Packet::operator delete (void *_p)
 {
+	packetSL.enter();
 	s_alloc.Free ( (Packet *) _p);
+	packetSL.leave();
 }
 
 protocol::Header *Packet::getHeader()

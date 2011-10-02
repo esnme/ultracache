@@ -2,8 +2,12 @@
 #include "ByteStream.h"
 #include <assert.h>
 #include "Response.h"
+#include "Heap.h"
+#include "Hash.h"
 
 Server::Server()
+	: m_rxQueue(65536),
+		m_txQueue(65536)
 {
 	m_buffer = new UINT8[CONFIG_MAX_REQUEST_SIZE];
 	m_bIsRunning = true;
@@ -57,6 +61,7 @@ SOCKET Server::createSocket(int port)
 	setsockopt(sockfd, IPPROTO_IPV6, IPV6_V6ONLY, (char *)&flag, sizeof(flag)); 
 
 
+	//SocketSetNonBlock(sockfd, true);
 
 	struct sockaddr_in bindAddr;
 
@@ -338,6 +343,9 @@ int Server::main(int argc, char **argv)
 {
 	REQUESTMAP rmap;
 
+	Heap heap(16);
+	Hash hash(65536);
+
 	SOCKET sockfd = Server::createSocket(11211);
 
 	if (sockfd == -1)
@@ -347,7 +355,7 @@ int Server::main(int argc, char **argv)
 
 	Server::m_sockfd = sockfd;
 
-	Server::m_cache = new Cache(1024);
+	Server::m_cache = new Cache(512);
 
 	while (m_bIsRunning)
 	{
@@ -360,6 +368,12 @@ int Server::main(int argc, char **argv)
 
 		if (recvResult == -1)
 		{
+			if (SocketWouldBlock(sockfd))
+			{
+				YieldThread();
+				continue;
+			}
+
 			delete packet;
 			continue;
 		}
@@ -379,6 +393,7 @@ int Server::main(int argc, char **argv)
 		nodeId |= ( ((UINT64) remoteAddr.sin_addr.s_addr) << 32ULL);
 		nodeId |= ( ((UINT64) remoteAddr.sin_port) << 16ULL);
 		nodeId |= ( ((UINT64) header->rid) << 0ULL);
+
 
 		REQUESTMAP::iterator iter = rmap.find(nodeId);
 
@@ -404,11 +419,13 @@ int Server::main(int argc, char **argv)
 
 		case Request::COMPLETE:
 			decodeRequest(request);
+			rmap.erase(iter);
+			delete request;
+			break;
 
 			// Fall through
 		case Request::FAILED:
 			rmap.erase(iter);
-
 			delete request;
 			break;
 		}

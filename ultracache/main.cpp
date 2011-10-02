@@ -2,6 +2,7 @@
 #include "socketdefs.h"
 
 int tests (int argc, char **argv);
+int benchmark (int argc, char **argv);
 
 int main (int argc, char **argv)
 {
@@ -14,7 +15,12 @@ int main (int argc, char **argv)
 	{
 		return tests(argc, argv);
 	}
-	
+
+	if (argc > 1 && strcmp(argv[1], "--benchmark") == 0)
+	{
+		return benchmark(argc, argv);
+	}
+
 	Server server;
 
 	return server.main(argc, argv);
