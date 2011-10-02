@@ -96,18 +96,18 @@ Heap::HeapEntry *Heap::allocFromFree(size_t _cbSize)
 				{
 					if (prev)
 					{
-						prev->next = entry->next;
+						prev->pNext = entry->pNext;
 					}
 					else
 					{
-						m_free[lg][slot] = decompressPtr(entry->next);
+						m_free[lg][slot] = entry->pNext;
 					}
 
 					assert (entry->cbSize >= _cbSize);
 					return entry;
 				}
 				prev = entry;
-				entry = decompressPtr(entry->next);
+				entry = entry->pNext;
 			}
 		}
 		slot = 0;
@@ -177,7 +177,7 @@ void Heap::free(void *ptr)
 		slot = (freeEntry->cbSize - (1 << index)) / div;
 	}
 
-	freeEntry->next = compressPtr(m_free[index][slot]);
+	freeEntry->pNext = m_free[index][slot];
 	m_free[index][slot] = freeEntry;
 
 	this->m_cbAllocSize -= freeEntry->cbSize;
@@ -193,12 +193,3 @@ Heap::HeapEntry *Heap::allocByCompact(size_t _cbSize)
 	return NULL;
 }
 
-size_t Heap::compressPtr(HeapEntry *ptr)
-{
-	return (((size_t)(ptr)) >> 3ULL);
-}
-
-Heap::HeapEntry *Heap::decompressPtr(size_t value)
-{
-	return ((Heap::HeapEntry*)(((size_t)(value)) << 3ULL));
-}

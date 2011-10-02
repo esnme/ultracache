@@ -21,8 +21,9 @@ public:
 private:
 	struct HeapEntry
 	{
-		UINT64 cbSize:32;
-		UINT64 next:32;
+		UINT32 cbSize;
+
+		HeapEntry *pNext;
 	};
 
 	HeapEntry *allocFromFree(size_t _cbSize);
@@ -31,9 +32,7 @@ private:
 
 public:
 	static size_t align(size_t base, size_t value);
-	static size_t compressPtr(HeapEntry *ptr);
-	static HeapEntry *decompressPtr(size_t value);
-	
+
 	static size_t getSizeOfAlloc(void *ptr);
 
 private:

@@ -16,10 +16,11 @@ public:
 		UINT64 cbKeyLength:8;
 		UINT64 cbValueLength:20;
 		UINT64 reserved:10;
-		UINT64 next:32;
 		UINT64 cas;
 		UINT32 flags;
 		UINT32 expire;
+
+		HashItem *pNext;
 
 		void setup(size_t cbSize, void *key, size_t cbKey, void *value, size_t cbValue, UINT32 flags, UINT64 cas, UINT32 expire);
 
@@ -50,12 +51,9 @@ public:
 	void link(HASHCODE hash, HashItem *newItem, HashItem *previous);
 	void unlink(HASHCODE hash, HashItem *newItem, HashItem *previous);
 
-	static size_t compressPtr(HashItem *ptr);
-	static HashItem *decompressPtr(size_t value);
-
 private:
 	size_t m_binSize;
-	UINT32 *m_bin;
+	HashItem **m_bin;
 
 
 
