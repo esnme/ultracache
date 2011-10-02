@@ -109,17 +109,18 @@ int benchmark (int argc, char **argv)
 
 	Server *server;
 
+	JThread serverThread;
+
 	if (!noserver)
 	{
 		server = new Server();
-	
-		HANDLE hServer = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) ServerProc, server, 0, NULL);
+		serverThread = JThread::createThread(ServerProc, server);
 		MSECSleep(5000);
 	}
 
 	fprintf (stderr, "%s: Using server address %s\n", __FUNCTION__, serverAddress);
 
-	HANDLE hClients[CLIENT_COUNT];
+	JThread clients[CLIENT_COUNT];
 
 	struct sockaddr_in remoteAddr;
 	memset (&remoteAddr, 0, sizeof(sockaddr_in));
@@ -129,7 +130,7 @@ int benchmark (int argc, char **argv)
 
 	for (int index = 0; index < CLIENT_COUNT; index ++)
 	{
-		hClients[index] = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) ClientProc, &remoteAddr, 0, NULL);
+		clients[index] = JThread::createThread(ClientProc, NULL);
 	}
 
 	UINT64 wlast = 0;
