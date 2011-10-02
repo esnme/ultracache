@@ -57,7 +57,7 @@ void *ClientProc(void *arg)
 
 			int key = rand () % cCount;
 			char strKey[17];
-			sprintf(strKey, "%08x%08x", (DWORD) PortableGetCurrentThreadId(), key);
+			sprintf(strKey, "%08x%08x", PortableGetCurrentThreadId(), key);
 
 			handles[index] = client.getMulti(strKey, 16);
 		}
