@@ -3,7 +3,7 @@
 #ifdef _WIN32
 #include <Windows.h>
 #else
-#error "Not portable yet"
+#include <pthread.h>
 #endif
 
 class JThread
