@@ -1,19 +1,12 @@
 #include "Heap.h"
 #include <assert.h>
 #include <stdio.h>
-
-#ifdef _WIN32
-#include <Windows.h>
-#else
-#error "Need virtual memory functions here"
-#endif
-
+#include <string.h>
+#include <malloc.h>
 
 Heap::Heap(size_t _cbSize)
 {
 	m_pBase = malloc(_cbSize);//(NULL, _cbSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-
-	DWORD dwLastError = GetLastError();
 
 	m_pStart = (UINT8 *) m_pBase;
 	m_pEnd = m_pStart + _cbSize;

@@ -1,6 +1,5 @@
 #include "Packet.h"
 #include "JAllocator.h"
-#include <Windows.h>
 #include "Spinlock.h"
 
 JAllocator<Packet, 512, true> s_alloc;

@@ -469,8 +469,8 @@ int Server::main(int argc, char **argv)
 
 	Server::m_cache = new Cache(512);
 
-	m_rxThread[0] = JThread::createThread(RxThreadWrap, this);
-	m_rxThread[1] = JThread::createThread(RxThreadWrap, this);
+	m_rxThread[2] = JThread::createThread(RxThreadWrap, this);
+	m_rxThread[3] = JThread::createThread(RxThreadWrap, this);
 	m_txThread[0] = JThread::createThread(TxThreadWrap, this);
 	m_txThread[1] = JThread::createThread(TxThreadWrap, this);
 
