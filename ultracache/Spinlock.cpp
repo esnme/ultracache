@@ -6,6 +6,8 @@
 
 #pragma intrinsic(_InterlockedCompareExchange, _InterlockedExchange)
 
+#else
+#error "Not portable yet"
 #endif
 
 #define SPINS_COUNT 4096

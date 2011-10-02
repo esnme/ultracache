@@ -1,7 +1,5 @@
 #include "JThread.h"
 
-#include <Windows.h>
-
 JThread::JThread (HANDLE _handle)
 {
 	m_handle = _handle;
