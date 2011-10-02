@@ -11,7 +11,7 @@ template <typename _Ty> class JQueue
 	volatile unsigned int m_iWriteCursor;
 	volatile unsigned int m_cItems;
 
-	_Ty *m_pQueueList;
+	_Ty **m_pQueueList;
 	unsigned int m_endIndex;
 	unsigned int m_startIndex;
 
@@ -19,7 +19,7 @@ template <typename _Ty> class JQueue
 
 public:
 
-	bool PushEnd (const _Ty& _inItem)
+	bool PushEnd (const _Ty* _inItem)
 	{
 		if (m_cItems == m_cQueueLength)
 		{
@@ -32,18 +32,18 @@ public:
 		return true;
 	}
 
-	_Ty &Begin (void)
+	_Ty *Begin (void)
 	{
 		return m_pQueueList[m_iReadCursor % m_cQueueLength];
 	}
 
-	_Ty &End (void)
+	_Ty *End (void)
 	{
 		return m_pQueueList[ (m_iWriteCursor - 1) % m_cQueueLength];
 	}
 
 
-	bool PushBegin (const _Ty& _inItem)
+	bool PushBegin (_Ty* _inItem)
 	{
 		if (m_cItems == m_cQueueLength)
 		{
@@ -58,7 +58,7 @@ public:
 		return true;
 	}
 
-	bool PopBegin (_Ty& _outItem)
+	bool PopBegin (_Ty** _outItem)
 	{
 		if (m_cItems == 0)
 		{
@@ -66,7 +66,7 @@ public:
 		}
 
 
-		_outItem = m_pQueueList[m_iReadCursor % m_cQueueLength];
+		*_outItem = m_pQueueList[m_iReadCursor % m_cQueueLength];
 		m_pQueueList[m_iReadCursor % m_cQueueLength] = NULL;
 
 		m_iReadCursor ++;
@@ -76,7 +76,7 @@ public:
 	}
 
 
-	bool PopEnd (_Ty& _outItem)
+	bool PopEnd (_Ty** _outItem)
 	{
 		if (m_cItems == 0)
 		{
@@ -84,7 +84,7 @@ public:
 		}
 
 		m_iWriteCursor --;
-		_outItem = m_pQueueList[m_iWriteCursor % m_cQueueLength];
+		*_outItem = m_pQueueList[m_iWriteCursor % m_cQueueLength];
 		m_pQueueList[m_iWriteCursor % m_cQueueLength] = NULL;
 
 		m_cItems --;
@@ -98,7 +98,7 @@ public:
 
 	JQueue (int _cLength)
 	{
-		m_pQueueList = new _Ty[_cLength];
+		m_pQueueList = new _Ty*[_cLength];
 		m_cQueueLength = _cLength;
 		m_iReadCursor = 0;
 		m_iWriteCursor = 0;

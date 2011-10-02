@@ -45,8 +45,8 @@ private:
 
 	volatile bool m_bIsRunning;
 
-	JThreadQueue<Request *> m_rxQueue;
-	JThreadQueue<Response *> m_txQueue;
+	JThreadQueue<Request> m_rxQueue;
+	JThreadQueue<Response> m_txQueue;
 
 	JThread m_rxThread[2];
 	JThread m_txThread[2];

@@ -344,7 +344,7 @@ void Server::txThread()
 	while (m_bIsRunning)
 	{
 		Response *response;
-		m_txQueue.WaitForItem(response, true);
+		m_txQueue.WaitForItem(&response, true);
 	
 		if (response == NULL)
 		{
@@ -483,7 +483,7 @@ int Server::main(int argc, char **argv)
 	while (m_bIsRunning)
 	{
 		Request *request;
-		m_rxQueue.WaitForItem(request, true);
+		m_rxQueue.WaitForItem(&request, true);
 
 		if (request == NULL)
 		{

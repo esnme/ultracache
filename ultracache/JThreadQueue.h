@@ -54,7 +54,7 @@ public:
 		return m_queue;
 	}
 
-	void WaitForItem (_Ty &_outItem, bool _bLock = true)
+	void WaitForItem (_Ty **_outItem, bool _bLock = true)
 	{
 		bool bResult;
 
@@ -84,7 +84,7 @@ public:
 
 	}
 
-	bool PollForItem (_Ty &_outItem)
+	bool PollForItem (_Ty **_outItem)
 	{
 		bool bResult;
 
@@ -97,7 +97,7 @@ public:
 		return bResult;
 	}
 
-	void PostItem (_Ty _outItem)
+	void PostItem (_Ty *_outItem)
 	{
 		bool bResult; 
 
