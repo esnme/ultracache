@@ -6,8 +6,6 @@
 
 void *ServerProc(void *arg)
 {
-	SetThreadPriority (GetCurrentThread(), THREAD_PRIORITY_HIGHEST);
-
 	Server *server = (Server *) arg;
 	server->main(0, NULL);
 	return NULL;
@@ -33,7 +31,7 @@ void *ClientProc(void *arg)
 	while (cCount < 100000)
 	{
 		char strKey[16];
-		sprintf(strKey, "%08x%08x", GetCurrentThreadId(), cCount);
+		sprintf(strKey, "%08x%08x", PortableGetCurrentThreadId(), cCount);
 
 		bool bResult = client.set(strKey, 16, value, valueLen, 0, 0, false);
 				
@@ -59,7 +57,7 @@ void *ClientProc(void *arg)
 
 			int key = rand () % cCount;
 			char strKey[16];
-			sprintf(strKey, "%08x%08x", GetCurrentThreadId(), key);
+			sprintf(strKey, "%08x%08x", PortableGetCurrentThreadId(), key);
 
 			handles[index] = client.getMulti(strKey, 16);
 		}

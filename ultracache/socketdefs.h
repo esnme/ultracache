@@ -20,6 +20,7 @@ typedef int socklen_t;
 	ioctlsocket((_fd), FIONBIO, &flags); \
 } \
 
+#define PortableGetCurrentThreadId() GetCurrentThreadId()
 #define YieldThread() SwitchToThread()
 
 #else
@@ -38,6 +39,7 @@ typedef int socklen_t;
 #include <netdb.h>
 #include <fcntl.h>
 #include <errno.h>
+#include <pthread.h>
 typedef int SOCKET;
 #define SocketClose(_fd) close((_fd))
 #define SocketWouldBlock(_fd) (errno == EAGAIN)
@@ -53,6 +55,9 @@ typedef int SOCKET;
 #define SocketGetLastError() (errno)
 
 #define MSECSleep(_ms) usleep((_ms) * 1000)
+
+#define PortableGetCurrentThreadId() pthread_self()
+
 #endif
 
 #ifndef MSG_NOSIGNAL
