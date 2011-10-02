@@ -41,6 +41,12 @@ void *ServerThread(void *arg)
 
 int tests (int argc, char **argv)
 {
+	Hash::HashItem *inptr = (Hash::HashItem *) 0xfafa3130fafa3130ULL;
+	size_t cptr = Hash::compressPtr(inptr);
+	assert (Hash::decompressPtr(cptr) == inptr);
+
+
+
 	Server server;
 
 	JThread thread = JThread::createThread(ServerThread, &server);
@@ -59,6 +65,9 @@ int tests (int argc, char **argv)
 	void *value;
 	size_t cbValue;
 	
+
+
+
 	
 	// Connect
 	assert(client.connect(serverAddr));
