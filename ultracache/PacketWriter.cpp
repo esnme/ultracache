@@ -1,7 +1,7 @@
 #include "PacketWriter.h"
 #include <assert.h>
 #include <stdlib.h>
-
+#include <string.h>
 
 PacketWriter::PacketWriter(protocol::Commands cmd, const struct sockaddr_in &_remoteAddr, unsigned int _rid, bool bAsync)
 {

@@ -67,10 +67,10 @@ int tests (int argc, char **argv)
 	// Connect to unknown address (?)
 
 	// Set sync
-	assert (client.set("KEY", 3, "VALUE", 5, 0, 0, false));
+	assert (client.set("KEY", 3, (void *) "VALUE", 5, 0, 0, false));
 	
 	// Set async
-	assert (client.set("KEY", 3, "VALUE2", 6, 0, 0, true));
+	assert (client.set("KEY", 3, (void *) "VALUE2", 6, 0, 0, true));
 	MSECSleep(500);
 
 	// Set expire relative

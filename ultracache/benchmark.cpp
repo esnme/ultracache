@@ -16,7 +16,7 @@ volatile UINT64 g_readCount = 0;
 
 void *ClientProc(void *arg)
 {
-	srand(GetCurrentThreadId());
+	srand(PortableGetCurrentThreadId());
 
 	struct sockaddr_in *remoteAddr = (sockaddr_in *) arg;
 

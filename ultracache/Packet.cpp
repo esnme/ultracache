@@ -2,7 +2,7 @@
 #include "JAllocator.h"
 #include "Spinlock.h"
 
-JAllocator<Packet, 512, true> s_alloc;
+static JAllocator<Packet, 512, true> s_alloc;
 
 //FIXME: Packet shouldn't be agnostic of header size, it makes no sense
 

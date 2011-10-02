@@ -1,9 +1,16 @@
 #include "JThread.h"
 
+#ifdef _WIN32
 JThread::JThread (HANDLE _handle)
 {
 	m_handle = _handle;
 }
+#else
+JThread::JThread (pthread_t _handle)
+{
+	m_handle = _handle;
+}
+#endif
 
 JThread::JThread ()
 {
@@ -20,8 +27,8 @@ JThread JThread::createThread(THREADPROC proc, void *arg)
 #ifdef _WIN32
 	HANDLE hThread = CreateThread(NULL, 0, (LPTHREAD_START_ROUTINE) proc, arg, 0, NULL);
 #else
-	HANDLE hThread;
-	pthread_create(&m_handle, NULL, proc, arg);
+	pthread_t hThread;
+	pthread_create(&hThread, NULL, proc, arg);
 #endif
 
 	JThread ret(hThread);
@@ -33,6 +40,6 @@ void JThread::join()
 #ifdef _WIN32
 	WaitForSingleObject(m_handle, INFINITE);
 #else
-	pthread_join(&m_handle, NULL),
+	pthread_join(m_handle, NULL);
 #endif
 }

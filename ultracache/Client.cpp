@@ -51,27 +51,23 @@ Client::Errors Client::getError()
 
 void Client::wouldSleep(int msec)
 {
-	Sleep(msec);
+	MSECSleep(msec);
 }
 
 int Client::wouldBlock(SOCKET fd, int op, const timeval *tv)
 {
-	fd_set set;
-	FD_ZERO(&set);
-	FD_SET(fd, &set);
-
-	WSAPOLLFD pfd;
+	struct pollfd pfd;
 	pfd.fd = fd;
 
 
 	switch (op)
 	{
 	case FD_READ: 
-		pfd.events = POLLRDNORM;
+		pfd.events = POLLIN;
 		break;
 
 	case FD_WRITE:
-		pfd.events = POLLWRNORM;
+		pfd.events = POLLOUT;
 		break;
 
 	default:
@@ -79,7 +75,7 @@ int Client::wouldBlock(SOCKET fd, int op, const timeval *tv)
 		return -1;
 	}
 
-	int res = WSAPoll(&pfd, 1, tv->tv_sec * 1000);
+	int res = poll(&pfd, 1, tv->tv_sec * 1000);
 
 	if (res < 1)
 	{
@@ -933,7 +929,7 @@ bool Client::readMulti(MGETHANDLE *handles, size_t cHandles, int &offset, const 
 }
 
 
-HANDLE Client::get(const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas)
+Client::HANDLE Client::get(const char *key, size_t cbKey, void **outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas)
 {
 	if (!isConnected())
 	{

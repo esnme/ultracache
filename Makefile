@@ -3,7 +3,7 @@ CPP=g++
 SOURCE=./ultracache
 LIBS=-lpthread -lm -lstdc++ 
 OBJS=benchmark.o Client.o JThread.o PacketReader.o Response.o tests.o ByteStream.o Hash.o main.o PacketWriter.o Server.o Cache.o Heap.o Packet.o Request.o Spinlock.o
-CPPFLAGS=-I./ultracache/
+CPPFLAGS=-I./ultracache/ -Wno-deprecated
 
 all : ultracached
 

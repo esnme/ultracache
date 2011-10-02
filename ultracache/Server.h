@@ -4,16 +4,21 @@
 #include "Cache.h"
 #include "ByteStream.h"
 #include <map>
+#ifdef _WIN32
 #include <hash_map>
+#else
+#include <ext/hash_map>
+#endif
 #include "JThreadQueue.h"
 #include "Response.h"
 #include "JThread.h"
 #include "Spinlock.h"
+#include "types.h"
 
 class Server
 {
 private:
-	typedef std::hash_map<UINT64, Request *> REQUESTMAP;
+	typedef __gnu_cxx::hash_map<UINT64, Request *> REQUESTMAP;
 
 public:
 	Server();

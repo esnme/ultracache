@@ -3,7 +3,8 @@
 #include <assert.h>
 #include <stdio.h>
 #include "Spinlock.h"
-JAllocator<Request, 512, true> s_alloc;
+
+static JAllocator<Request, 512, true> s_alloc;
 
 static Spinlock s_requestSL;
 

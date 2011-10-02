@@ -40,13 +40,15 @@ typedef int socklen_t;
 #include <fcntl.h>
 #include <errno.h>
 #include <pthread.h>
+#include <poll.h>
+#include <sched.h>
 typedef int SOCKET;
 #define SocketClose(_fd) close((_fd))
 #define SocketWouldBlock(_fd) (errno == EAGAIN)
 #define SocketEINPROGRESS(_fd) (errno == EINPROGRESS)
 #define SocketSetNonBlock(_fd, _state) \
 { \
-	if ((_state) \
+	if ((_state)) \
 		fcntl ((_fd), F_SETFL, O_NONBLOCK); \
 	else \
 		fcntl ((_fd), F_SETFL, 0); \
@@ -57,6 +59,16 @@ typedef int SOCKET;
 #define MSECSleep(_ms) usleep((_ms) * 1000)
 
 #define PortableGetCurrentThreadId() pthread_self()
+
+#ifndef FD_READ
+#define FD_READ 1
+#endif
+
+#ifndef FD_WRITE
+#define FD_WRITE 2
+#endif
+
+#define YieldThread() sched_yield()
 
 #endif
 

@@ -5,7 +5,7 @@
 #include "Heap.h"
 #include <string>
 #include <stdint.h> 
-
+#include <malloc.h>
 /*
 static void memcpy64(UINT64 *dst, UINT64 *src, size_t count)
 {

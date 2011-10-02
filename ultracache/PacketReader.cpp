@@ -1,6 +1,7 @@
 #include "PacketReader.h"
 #include <assert.h>
 #include <stdio.h>
+#include <string.h>
 
 PacketReader::PacketReader()
 {
