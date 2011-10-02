@@ -22,6 +22,7 @@ typedef int socklen_t;
 
 #define PortableGetCurrentThreadId() GetCurrentThreadId()
 #define YieldThread() SwitchToThread()
+#define PortablePoll(_fds, _num, _timeout) WSAPoll(_fds, _num, _timeout)
 
 #else
 
@@ -69,6 +70,7 @@ typedef int SOCKET;
 #endif
 
 #define YieldThread() sched_yield()
+#define PortablePoll(_fds, _num, _timeout) poll(_fds, _num, _timeout)
 
 #endif
 

@@ -75,7 +75,7 @@ int Client::wouldBlock(SOCKET fd, int op, const timeval *tv)
 		return -1;
 	}
 
-	int res = poll(&pfd, 1, tv->tv_sec * 1000);
+	int res = PortablePoll(&pfd, 1, tv->tv_sec * 1000);
 
 	if (res < 1)
 	{

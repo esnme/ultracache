@@ -15,6 +15,10 @@
 #include "Spinlock.h"
 #include "types.h"
 
+#ifndef __gnu_cxx
+#define __gnu_cxx std
+#endif
+
 class Server
 {
 private:
