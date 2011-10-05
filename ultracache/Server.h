@@ -48,8 +48,10 @@ private:
 	JThreadQueue<Request> m_rxQueue;
 	JThreadQueue<Response> m_txQueue;
 
-	JThread m_rxThread[2];
-	JThread m_txThread[2];
+	JThread m_rxThread[32];
+	JThread m_txThread[32];
+
+	int m_cThreads;
 
 	Spinlock m_rmapSL;
 	REQUESTMAP m_rmap;

@@ -4,6 +4,11 @@
 #include "Response.h"
 #include "Heap.h"
 #include "Hash.h"
+#include <math.h>
+
+#ifndef min
+#define min(a,b)            (((a) < (b)) ? (a) : (b))
+#endif
 
 Server::Server()
 	: m_rxQueue(1024 * 1024),
@@ -457,14 +462,43 @@ static void *TxThreadWrap(void *arg)
 	return NULL;
 }
 
+static int GetCPUCount()
+{
+#ifdef _WIN32
+	SYSTEM_INFO sysinfo;
+	GetSystemInfo( &sysinfo );
+	return (int) sysinfo.dwNumberOfProcessors;
+#else
+	return (int) sysconf( _SC_NPROCESSORS_ONLN );
+#endif
+}
+
 int Server::main(int argc, char **argv)
 {
 	REQUESTMAP rmap;
 
-	Heap heap(16);
-	Hash hash(65536);
+	int mbSize = 64;
+	int port = 11211;
 
-	SOCKET sockfd = Server::createSocket(11211);
+	for (int index = 1; index < argc - 1; index ++)
+	{
+		if (strcmp (argv[index], "-s") == 0 ||
+				strcmp (argv[index], "--size") == 0)
+		{
+			mbSize = atoi(argv[index + 1]);
+		}
+		else
+		if (strcmp (argv[index], "-p") == 0 ||
+				strcmp (argv[index], "--port") == 0)
+		{
+			port = atoi(argv[index + 1]);
+		}
+	}
+
+	fprintf (stderr, "Size: %d mb\n", mbSize);
+	fprintf (stderr, "Port: %d\n", port);
+			
+	SOCKET sockfd = Server::createSocket(port);
 
 	if (sockfd == -1)
 	{
@@ -473,12 +507,20 @@ int Server::main(int argc, char **argv)
 
 	Server::m_sockfd = sockfd;
 
-	Server::m_cache = new Cache(512);
+	Server::m_cache = new Cache(mbSize);
 
-	m_rxThread[0] = JThread::createThread(RxThreadWrap, this);
-	m_rxThread[1] = JThread::createThread(RxThreadWrap, this);
-	m_txThread[0] = JThread::createThread(TxThreadWrap, this);
-	m_txThread[1] = JThread::createThread(TxThreadWrap, this);
+	m_cThreads = max(GetCPUCount() / 2, 1);
+
+	fprintf (stderr, "Server has %d CPU cores, starting %d Rx and %d Tx threads\n", 
+		GetCPUCount(),
+		m_cThreads, 
+		m_cThreads);
+
+	for (int index = 0; index < m_cThreads; index ++)
+	{
+		m_rxThread[index] = JThread::createThread(RxThreadWrap, this);
+		m_txThread[index] = JThread::createThread(TxThreadWrap, this);
+	}
 
 	while (m_bIsRunning)
 	{
@@ -498,13 +540,17 @@ int Server::main(int argc, char **argv)
 
 	SocketClose(sockfd);
 
-	m_txQueue.PostItem(NULL);
-	m_txQueue.PostItem(NULL);
+	for (int index = 0; index < m_cThreads; index ++)
+	{
+		m_txQueue.PostItem(NULL);
+		m_rxQueue.PostItem(NULL);
+	}
 
-	m_rxThread[0].join();
-	m_rxThread[1].join();
-	m_txThread[0].join();
-	m_txThread[1].join();
+	for (int index = 0; index < m_cThreads; index ++)
+	{
+		m_rxThread[index].join();
+		m_txThread[index].join();
+	}
 
 	return 0;
 }
