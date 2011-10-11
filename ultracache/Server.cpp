@@ -5,6 +5,9 @@
 #include "Heap.h"
 #include "Hash.h"
 #include <math.h>
+#include "TimeProvider.h"
+
+extern TimeProvider g_tp;
 
 #ifndef min
 #define min(a,b)            (((a) < (b)) ? (a) : (b))
@@ -38,7 +41,7 @@ SOCKET Server::createSocket(int port)
 
 /**/
 
-	int size = (1024 * 1024 * 64);
+	int size = (1024 * 1024 * 32);
 	
 	while (true)
 	{
@@ -309,6 +312,8 @@ void Server::decodeRequest(Request *request)
 
 				if (handle)
 				{
+
+
 					response = new Response(protocol::RESULT_GET, request->getRemoteAddr(), request->getRid());
 					response->write( (UINT8) keyLen);
 					response->write( (UINT8 *) key, keyLen);
@@ -509,7 +514,7 @@ int Server::main(int argc, char **argv)
 
 	Server::m_cache = new Cache(mbSize);
 
-	m_cThreads = max(GetCPUCount() / 2, 1);
+	m_cThreads = GetCPUCount();
 
 	fprintf (stderr, "Server has %d CPU cores, starting %d Rx and %d Tx threads\n", 
 		GetCPUCount(),
@@ -535,6 +540,9 @@ int Server::main(int argc, char **argv)
 		decodeRequest(request);
 
 		delete request;
+
+		TimeProvider::update();
+
 
 	}
 

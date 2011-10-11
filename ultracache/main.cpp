@@ -1,8 +1,11 @@
 #include "Server.h"
 #include "socketdefs.h"
-
+#include "TimeProvider.h"
 int tests (int argc, char **argv);
 int benchmark (int argc, char **argv);
+
+TimeProvider g_tp;
+
 
 int main (int argc, char **argv)
 {
@@ -23,5 +26,7 @@ int main (int argc, char **argv)
 
 	Server server;
 
+	TimeProvider::setup(time(0), false);
+	
 	return server.main(argc, argv);
 }

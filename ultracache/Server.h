@@ -39,7 +39,6 @@ private:
 private:
 	SOCKET createSocket(int port);
 	void decodeRequest(Request *request);
-	
 
 	UINT8 *m_buffer;
 
@@ -55,4 +54,5 @@ private:
 
 	Spinlock m_rmapSL;
 	REQUESTMAP m_rmap;
+
 };

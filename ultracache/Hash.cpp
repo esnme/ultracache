@@ -6,6 +6,8 @@
 #include <string>
 #include <stdint.h> 
 #include <malloc.h>
+#include "config.h"
+#include "TimeProvider.h"
 /*
 static void memcpy64(UINT64 *dst, UINT64 *src, size_t count)
 {
@@ -103,7 +105,20 @@ void Hash::HashItem::setup(size_t cwSize, void *key, size_t cbKey, void *value, 
 	this->cbValueLength = cbValue;
 	this->cas = cas;
 	this->flags = flags;
-	this->expire = expire;
+	
+	if (expire == 0)
+	{
+		this->expire = 0;
+	}
+	else
+		if (expire <= CONFIG_EXPTIME_OFFSET)
+		{
+			this->expire = TimeProvider::getTime() + expire;
+		}
+		else	
+		{
+			this->expire = expire;
+		}
 
 	UINT8 *ptr = (UINT8 *) (this+1);
 	memcpy(ptr, key, cbKey);

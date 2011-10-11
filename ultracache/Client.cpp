@@ -286,7 +286,7 @@ bool Client::del(const char *key, size_t cbKey, time_t *expiration, bool bAsync)
 
 	*/
 
-	PacketWriter writer(protocol::SET, m_remoteAddr, getNextRid(), bAsync);
+	PacketWriter writer(protocol::DEL, m_remoteAddr, getNextRid(), bAsync);
 
 	if (cbKey > CONFIG_KEY_LENGTH)
 	{

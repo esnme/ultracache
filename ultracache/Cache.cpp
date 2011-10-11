@@ -2,6 +2,7 @@
 #include "config.h"
 #include <assert.h>
 #include <string.h>
+#include "TimeProvider.h"
 
 
 //FIXME: Handle when growAndReplace returns NULL
@@ -43,6 +44,25 @@ UINT64 *Cache::alignKey(const char *key, size_t cbKey, char *buffer, size_t &cbK
 	return (UINT64 *) buffer;
 }
 
+bool Cache::processExpiration(Hash::HashItem *item, Hash::HASHCODE hash, Hash::HashItem *previous)
+{
+	if (item->getExpire() == 0)
+	{
+		return false;
+	}
+	
+	if (TimeProvider::getTime() <= item->getExpire())
+	{
+		return false;
+	}
+
+	m_hash->unlink(hash, item, previous);
+	m_heap->free(item);
+
+	return true;
+
+}
+
 Cache::HANDLE Cache::get(const char *key, size_t cbKey, void **_outValue, size_t *_cbOutValue, int *_outFlags, UINT64 *_outCas)
 {
 	char buffer[CONFIG_MAX_KEY_LENGTH];
@@ -58,6 +78,11 @@ Cache::HANDLE Cache::get(const char *key, size_t cbKey, void **_outValue, size_t
 		return NULL;
 	}
 
+	if (processExpiration(item, hash, previous))
+	{
+		return NULL;
+	}
+	
 	*_outValue = item->getValuePtr();
 	*_cbOutValue = item->getValueLen();
 
@@ -160,17 +185,25 @@ bool Cache::del(const char *key, size_t cbKey, time_t *expiration, bool bAsync)
 	size_t cbKeyAligned;
 	UINT64 *alignedKey = alignKey(key, cbKey, buffer, cbKeyAligned);
 	
-	Hash::HashItem *item = m_hash->remove(alignedKey, cbKey);
+	Hash::HashItem *previous;
+	Hash::HASHCODE hash;
 
-
+	Hash::HashItem *item = m_hash->get(alignedKey, cbKey, &previous, &hash);
+	
 	if (item == NULL)
 	{
 		return false;
 	}
 
+	if (processExpiration(item, hash, previous))
+	{
+		return NULL;
+	}
+
 	if (expiration)
 		*expiration = item->getExpire();
 
+	m_hash->unlink(hash, item, previous);
 	m_heap->free(item);
 	return true;
 }

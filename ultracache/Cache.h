@@ -31,10 +31,10 @@ private:
 	static UINT64 *alignKey(const char *key, size_t cbKey, char *buffer, size_t &cbKeyAligned);
 	Hash::HashItem *alloc(size_t cbKey, size_t cbValue, size_t &cbOutSize);
 	UINT64 getNextCas();
-
 	bool incrementDecrement(const char *key, size_t cbKey, UINT64 number, bool bIncr);
-
 	Hash::HashItem *growAndReplace(Hash::HASHCODE hash, Hash::HashItem *item, Hash::HashItem *previous, size_t cbValue);
+
+	bool processExpiration(Hash::HashItem *item, Hash::HASHCODE hash, Hash::HashItem *previous);
 
 private:
 	Hash *m_hash;
