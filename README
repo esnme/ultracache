@@ -1,0 +1,10 @@
+ultracache is based upon the assumption that network I/O will saturate before your memory or CPU. 
+
+This is all a work in progress but the idea is that an efficient UDP protocol will let you harness more of your cache servers for large installations.
+
+The difference between ultracache and memcached ends here, beyond this they have the same API and are just as capable, well memcached being a slightly bit more capable at the moment.
+
+It current pushes 150.000 GET operations per second, meaning a 300.000 packet per second throughput.
+While the CPU isn't fully saturated it appears as if network I/O is indeed the limiting factor. 
+
+Feel free to contribute!
