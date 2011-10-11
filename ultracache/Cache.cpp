@@ -261,6 +261,11 @@ bool Cache::replace(const char *key, size_t cbKey, void *data, size_t cbData, ti
 		return false;
 	}
 
+	if (processExpiration(item, hash, previous))
+	{
+		return false;
+	}
+
 	Hash::HashItem *newItem = growAndReplace(hash, item, previous, cbData);
 	memcpy(newItem->getValuePtr(), data, cbData);
 	assert (newItem->getValueLen() == cbData);
