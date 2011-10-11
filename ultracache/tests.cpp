@@ -118,7 +118,7 @@ int tests (int argc, char **argv)
 	//===========================================================================
 
 	now = TimeProvider::getTime() + 10;
-	assert (client.set("KEYDEL", 6, (void *) "VALUE", 6, now, 0, false));
+	assert (client.set("KEYDEL", 6, (void *) "VALUE", 5, now, 0, false));
 	assert (client.del("KEYDEL", 6, &exp, false));
 	assert (exp == now);
 	//===========================================================================
@@ -133,7 +133,7 @@ int tests (int argc, char **argv)
 	//===========================================================================
 	// Del sync expired
 	//===========================================================================
-	assert (client.set("KEYDEL EXPIRED", 14, (void *) "VALUE", 6, 5, 0, false));
+	assert (client.set("KEYDEL EXPIRED", 14, (void *) "VALUE", 5, 5, 0, false));
 	TimeProvider::jumpTime(6);
 	assert (!client.del("KEYDEL EXPIRED", 14, &exp, false));
 	//===========================================================================
@@ -141,7 +141,7 @@ int tests (int argc, char **argv)
 	//===========================================================================
 	// Del async found
 	//===========================================================================
-	assert (client.set("KEYDEL FOUND", 12, (void *) "VALUE", 6, 0, 0, true));
+	assert (client.set("KEYDEL FOUND", 12, (void *) "VALUE", 5, 0, 0, true));
 	MSECSleep(500);
 	assert (client.del("KEYDEL FOUND", 12, &exp, true));
 	MSECSleep(500);
@@ -151,18 +151,27 @@ int tests (int argc, char **argv)
 	//===========================================================================
 	// Add found
 	//===========================================================================
+	assert (client.set("KEYADD FOUND", 12, (void *) "VALUE", 5, 5, 0, false));
+	assert (!client.add("KEYADD FOUND", 12, (void *) "VALUE2", 6, 0, 0, false));
+	
 	//===========================================================================
+
 	//===========================================================================
 	// Add not found
 	//===========================================================================
+	assert (client.add("KEYADD NOTFOUND", 15, (void *) "VALUE", 5, 0, 0, false));
+	//===========================================================================
+
+	//===========================================================================
+	// Add expired found
+	//===========================================================================
+	assert (client.set("KEYADD EXPIRE", 13, (void *) "VALUE", 5, 5, 0, false));
+	TimeProvider::jumpTime(6);
+	assert (client.add("KEYADD EXPIRE", 13, (void *) "VALUE2", 6, 0, 0, false));
 	//===========================================================================
 
 
 /*
-	bool set(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
-	bool del(const char *key, size_t cbKey, time_t *expiration, bool bAsync);
-	bool add(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
-
 	bool replace(const char *key, size_t cbKey, void *data, size_t cbData, time_t expiration, int flags, bool bAsync);
 	bool append(const char *key, size_t cbKey, void *data, size_t cbData, bool bAsync);
 	bool prepend(const char *key, size_t cbKey, void *data, size_t cbData, bool bAsync);

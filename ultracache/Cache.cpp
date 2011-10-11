@@ -220,7 +220,13 @@ bool Cache::add(const char *key, size_t cbKey, void *data, size_t cbData, time_t
 	Hash::HashItem *item = m_hash->get(alignedKey, cbKey, &previous, &hash);
 	if (item != NULL)
 	{
-		return false;
+		if (!processExpiration(item, hash, previous))
+		{
+			// Item hadn't expired
+			return false;
+		}
+
+		//FIXME: Perhaps grow existing item here?
 	}
 
 	size_t cbTotal;
